@@ -45,7 +45,7 @@ public final class PickerActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-        setTitle("Choose apps");
+        setTitle(R.string.action_choose_apps);
         ActionBar ab = getActionBar();
         if (ab != null) ab.setDisplayHomeAsUpEnabled(true);
         chosenAtOpen = Prefs.carApps(this);
@@ -74,7 +74,7 @@ public final class PickerActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT));
         root.addView(list, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
 
-        Button done = Ui.filled(this, "Done");
+        Button done = Ui.filled(this, getString(R.string.action_done));
         done.setOnClickListener(v -> finish());
         LinearLayout.LayoutParams donep = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48));
         donep.setMargins(dp(16), dp(8), dp(16), dp(12));
@@ -116,7 +116,11 @@ public final class PickerActivity extends Activity {
     private void updateSubtitle() {
         int n = Prefs.carApps(this).size();
         ActionBar ab = getActionBar();
-        if (ab != null) ab.setSubtitle(n == 0 ? "Nothing chosen yet" : n + " chosen");
+        if (ab != null) {
+            ab.setSubtitle(n == 0
+                    ? getString(R.string.picker_nothing_chosen)
+                    : getString(R.string.picker_chosen_count, n));
+        }
     }
 
     /** A pill: search icon, the field, × while there is text. */
@@ -129,7 +133,7 @@ public final class PickerActivity extends Activity {
         icon.setImageDrawable(Ui.icon(this, R.drawable.ic_search, Ui.text2(this)));
         pill.addView(icon, new LinearLayout.LayoutParams(dp(20), dp(20)));
         EditText field = new EditText(this);
-        field.setHint("Search apps");
+        field.setHint(R.string.picker_search_hint);
         field.setSingleLine(true);
         field.setBackground(null);
         field.setTextSize(16);
@@ -177,17 +181,17 @@ public final class PickerActivity extends Activity {
                 }
                 (chosenAtOpen.contains(a.component.flattenToString()) ? inCar : other).add(a);
             }
-            if (chosenAtOpen.isEmpty() && filter.isEmpty()) items.add("hint:Tick the apps to show in the car.");
+            if (chosenAtOpen.isEmpty() && filter.isEmpty()) items.add("hint:" + getString(R.string.picker_hint));
             if (!inCar.isEmpty()) {
-                items.add("In the car");
+                items.add(getString(R.string.section_in_car));
                 items.addAll(inCar);
             }
             if (!other.isEmpty()) {
-                items.add("Other apps");
+                items.add(getString(R.string.picker_section_other));
                 items.addAll(other);
             }
             boolean none = inCar.isEmpty() && other.isEmpty() && !all.isEmpty();
-            noMatch.setText("No apps match “" + filter + "”");
+            noMatch.setText(getString(R.string.picker_no_match, filter));
             noMatch.setVisibility(none ? View.VISIBLE : View.GONE);
             notifyDataSetChanged();
         }

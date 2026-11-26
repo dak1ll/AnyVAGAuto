@@ -87,7 +87,10 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
             R.drawable.ic_keyboard, R.drawable.ic_close, R.drawable.ic_chevron_left};
     // Hide points to the screen edge the bar goes to
     private static final int NAV_HIDE_RIGHT = R.drawable.ic_chevron_right;
-    private static final String[] NAV_LABELS = {"Back", "Apps", "Last", "Keyboard", "Close", "Hide"};
+    private static final int[] NAV_LABEL_IDS = {
+            R.string.nav_back, R.string.nav_apps, R.string.nav_last,
+            R.string.nav_keyboard, R.string.nav_close, R.string.nav_hide
+    };
     private static final int NAV_BG = 0xFF16171A;
     private static final long NAV_PRESS_MS = 180;
     // the pointer: ring radius and the bitmap's size, dp
@@ -533,7 +536,13 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
         float labelGap = 4 * s;
         Paint.FontMetrics fm = label.getFontMetrics();
         float labelH = fm.descent - fm.ascent;
-        boolean labels = slot >= glyph + labelGap + labelH + 12 * s && label.measureText("Keyboard") <= w - 4 * s;
+        String[] navLabels = new String[NAV_LABEL_IDS.length];
+        float maxLabelW = 0;
+        for (int i = 0; i < NAV_LABEL_IDS.length; i++) {
+            navLabels[i] = context.getString(NAV_LABEL_IDS[i]);
+            maxLabelW = Math.max(maxLabelW, label.measureText(navLabels[i]));
+        }
+        boolean labels = slot >= glyph + labelGap + labelH + 12 * s && maxLabelW <= w - 4 * s;
 
         Bitmap b = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas cv = new Canvas(b);
@@ -562,7 +571,7 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
             d.draw(cv);
             if (labels) {
                 label.setColor(on ? 0xCCFFFFFF : 0x55FFFFFF);
-                cv.drawText(NAV_LABELS[i], w / 2f, y + glyph + labelGap - fm.ascent, label);
+                cv.drawText(navLabels[i], w / 2f, y + glyph + labelGap - fm.ascent, label);
             }
         }
 

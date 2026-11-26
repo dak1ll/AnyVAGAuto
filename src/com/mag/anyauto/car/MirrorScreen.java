@@ -110,10 +110,12 @@ final class MirrorScreen extends Screen implements SurfaceCallback, Mirror.Nav {
      */
     private Template pointerTemplate() {
         ActionStrip strip = new ActionStrip.Builder()
-                .addAction(new Action.Builder().setTitle("Tap").setIcon(icon(R.drawable.ic_touch))
+                .addAction(new Action.Builder().setTitle(getCarContext().getString(R.string.car_pointer_tap))
+                        .setIcon(icon(R.drawable.ic_touch))
                         .setOnClickListener(mirror::pointerTap)
                         .build())
-                .addAction(new Action.Builder().setTitle("Done").setIcon(icon(R.drawable.ic_check))
+                .addAction(new Action.Builder().setTitle(getCarContext().getString(R.string.action_done))
+                        .setIcon(icon(R.drawable.ic_check))
                         .setOnClickListener(() -> pointer(false))
                         .build())
                 .build();

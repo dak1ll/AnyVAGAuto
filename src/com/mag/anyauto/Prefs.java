@@ -29,6 +29,7 @@ public final class Prefs {
     private static final String POINTER_BUTTONS = "pointer_buttons";
     private static final String WAKE_FOR_VOICE = "wake_for_voice";
     private static final String SPLIT_MODE = "split_mode";
+    private static final String HYPEROS_GUIDE_HIDDEN = "hyperos_guide_hidden";
     static final int MIN_APP_DPI = 100;
     static final int MAX_APP_DPI = 640;
     static final int MAX_INSET_DP = 64;
@@ -136,6 +137,15 @@ public final class Prefs {
 
     static void hideDarkNote(Context c) {
         p(c).edit().putBoolean(DARK_NOTE_HIDDEN, true).apply();
+    }
+
+    /** The Home tip card for Xiaomi / HyperOS / MIUI background setup was dismissed. */
+    static boolean hyperosGuideHidden(Context c) {
+        return p(c).getBoolean(HYPEROS_GUIDE_HIDDEN, false);
+    }
+
+    static void hideHyperosGuide(Context c) {
+        p(c).edit().putBoolean(HYPEROS_GUIDE_HIDDEN, true).apply();
     }
 
     /** How many drives the car screen said that the phone's dark screen is on purpose. */

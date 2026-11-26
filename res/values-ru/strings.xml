@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AnyAuto</string>
+
+    <!-- Общие действия -->
+    <string name="action_ok">ОК</string>
+    <string name="action_close">Закрыть</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_reset">Сбросить</string>
+    <string name="action_done">Готово</string>
+    <string name="action_hide">Скрыть</string>
+    <string name="action_got_it">Понятно</string>
+    <string name="action_allow">Разрешить</string>
+    <string name="action_try">Попробовать</string>
+    <string name="action_choose_apps">Выбрать приложения</string>
+    <string name="action_update">Обновить</string>
+    <string name="action_whats_new">Что нового</string>
+    <string name="action_open_unknownauto">Открыть UnknownAuto</string>
+    <string name="action_get_unknownauto">Скачать UnknownAuto</string>
+    <string name="action_open_named">Открыть %1$s</string>
+    <string name="action_get_shizuku">Скачать Shizuku</string>
+    <string name="action_update_shizuku">Обновить Shizuku</string>
+    <string name="action_developer_options">Для разработчиков</string>
+    <string name="action_disable_battery_limit">Отключить ограничение</string>
+    <string name="action_app_settings">Настройки</string>
+
+    <!-- Главный экран и меню -->
+    <string name="section_in_car">В автомобиле</string>
+    <plurals name="app_count">
+        <item quantity="one">%d приложение</item>
+        <item quantity="few">%d приложения</item>
+        <item quantity="many">%d приложений</item>
+        <item quantity="other">%d приложения</item>
+    </plurals>
+    <string name="empty_no_apps_title">Приложения ещё не выбраны</string>
+    <string name="empty_no_apps_body">Выберите приложения телефона для показа на экране автомобиля.</string>
+
+    <string name="menu_full_screen">Во весь экран в авто</string>
+    <string name="menu_keep_phone_on">Не гасить экран телефона</string>
+    <string name="menu_keyboard">Клавиатура</string>
+    <string name="menu_nav_side">Сторона панели навигации</string>
+    <string name="menu_pointer_buttons">Кнопки указателя (шайба)</string>
+    <string name="menu_split_mode">Разделение экрана (Freeform)</string>
+    <string name="menu_auto_update">Проверять обновления автоматически</string>
+    <string name="menu_check_updates">Проверить обновления сейчас</string>
+    <string name="menu_help">Справка</string>
+    <string name="menu_install_for_car">Установка для автомобиля</string>
+
+    <!-- Диалоги и уведомления -->
+    <string name="dialog_pointer_title">Кнопки указателя</string>
+    <string name="dialog_pointer_body">Для автомобилей с шайбой, где Android Auto не показывает кнопку панорамирования (✥). На экране авто среди кнопок Android Auto появится «Указатель»: нажмите её, стрелками перемещайте кольцо и нажимайте «Нажать». «Готово» вернёт обычные кнопки.</string>
+    <string name="dialog_nav_side_title">Панель навигации на экране авто</string>
+    <string name="nav_side_left">Слева</string>
+    <string name="nav_side_right">Справа</string>
+    <string name="dialog_installed_title">Установлено для автомобиля</string>
+    <string name="dialog_not_installed_title">Не установлено для автомобиля</string>
+    <string name="dialog_installed_body">AnyAuto установлен так, что Android Auto его принимает. После обновления снова установите его через UnknownAuto.</string>
+    <string name="install_for_car_body">Android Auto запускает только приложения, установленные из Google Play. Перед использованием в автомобиле переустановите AnyAuto через UnknownAuto. Эмулятор (DHU) работает при любой установке.</string>
+
+    <string name="toast_checking_updates">Проверка обновлений…</string>
+    <string name="toast_update_error">Не удалось проверить обновления: %1$s</string>
+    <string name="toast_update_ready">AnyAuto %1$s готов к установке</string>
+    <string name="toast_update_up_to_date">Установлена последняя версия AnyAuto</string>
+
+    <!-- Карточки состояния -->
+    <string name="card_on_car_title">На экране автомобиля</string>
+    <string name="card_on_car_body_phone_on">Экран сейчас используется автомобилем. Режим «Попробовать» временно недоступен.</string>
+    <string name="card_on_car_body_phone_dark">Экран сейчас используется автомобилем. Телефон не засыпает и держит экран выключенным. Режим «Попробовать» временно недоступен.</string>
+
+    <string name="card_shizuku_root_title">%1$s запущен с root</string>
+    <string name="card_shizuku_root_body">На Android 13 и ниже система не отдаёт виртуальный экран root-процессу. Запустите %1$s через Беспроводную отладку.</string>
+    <string name="status_shizuku_running">%1$s работает</string>
+    <string name="status_shizuku_connecting">Подключение к %1$s…</string>
+    <string name="card_no_shizuku_title">Shizuku не установлен</string>
+    <string name="card_no_shizuku_body">Для работы AnyAuto нужен Shizuku или его форк. Он даёт приложению права adb без root.</string>
+    <string name="card_shizuku_stopped_title">%1$s не запущен</string>
+    <string name="card_shizuku_stopped_body">Откройте %1$s: включите Беспроводную отладку и нажмите «Запуск». После перезагрузки телефона службу нужно запускать заново.</string>
+    <string name="card_old_shizuku_title">Версия Shizuku устарела</string>
+    <string name="card_old_shizuku_body">Обновите Shizuku до версии 11 или новее.</string>
+    <string name="card_no_permission_title">Разрешите AnyAuto в %1$s</string>
+    <string name="card_no_permission_body">%1$s запрашивает доступ один раз. Выберите «Разрешать всегда».</string>
+
+    <string name="card_update_ready_title">Доступен AnyAuto %1$s</string>
+    <string name="card_update_ready_body_ua">Нажмите «Обновить», затем «Установить» в UnknownAuto. UnknownAuto сохранит установку так, чтобы Android Auto принимал приложение.</string>
+    <string name="card_update_ready_body_no_ua">Обновления устанавливаются через UnknownAuto, чтобы Android Auto продолжал видеть AnyAuto. Сначала установите UnknownAuto.</string>
+
+    <string name="card_dark_goes_title">Экран телефона гаснет в автомобиле</string>
+    <string name="card_dark_may_title">Экран телефона может гаснуть в автомобиле</string>
+    <string name="card_dark_goes_body">На этом телефоне экран автомобиля работает, только пока телефон не спит. Поэтому при работе AnyAuto в авто телефон бодрствует с выключенным экраном. Это штатная работа, а не сбой: экран вернётся при выходе из AnyAuto. Чтобы держать его включённым, отметьте ⋮ → Не гасить экран телефона.</string>
+    <string name="card_dark_may_body">На некоторых телефонах экран автомобиля работает, только пока телефон не спит. На них при работе AnyAuto в авто телефон бодрствует с выключенным экраном. Это штатная работа, а не сбой: экран вернётся при выходе из AnyAuto. Чтобы держать его включённым, отметьте ⋮ → Не гасить экран телефона.</string>
+
+    <!-- Диагностика OEM / HyperOS -->
+    <string name="card_hyperos_sec_title">Управление с экрана авто заблокировано</string>
+    <string name="card_hyperos_sec_body">На Xiaomi / HyperOS включите «Отладка по USB (Настройки безопасности)» в разделе «Для разработчиков», чтобы работали нажатия и кнопки на экране авто. После включения перезапустите Shizuku.</string>
+    <string name="card_battery_opt_title">Ограничение батареи в фоне</string>
+    <string name="card_battery_opt_body">Системная оптимизация батареи может приостанавливать AnyAuto и разрывать связь при работе на экране автомобиля.</string>
+    <string name="card_hyperos_guide_title">Настройка фона для Xiaomi / HyperOS</string>
+    <string name="card_hyperos_guide_body">Для стабильной работы в авто задайте «Контроль активности: Без ограничений», включите Автозапуск и закрепите AnyAuto замком в недавних приложениях.</string>
+
+    <!-- Профиль приложения и настройки клавиатуры -->
+    <string name="cd_app_profile">Профиль приложения</string>
+    <string name="profile_summary_dpi">%1$d dpi</string>
+    <string name="profile_summary_follow_app">По приложению</string>
+    <string name="profile_summary_inset">%1$d dp</string>
+    <string name="dialog_keyboard_where">Где открывать клавиатуру</string>
+    <string name="keyboard_on_car">На экране автомобиля</string>
+    <string name="keyboard_on_phone">На телефоне (экран не гаснет)</string>
+    <string name="dialog_keyboard_voice_header">Голосовой ввод</string>
+    <string name="keyboard_wake_for_voice">Кратко будить экран телефона для голоса</string>
+    <string name="keyboard_wake_for_voice_hint">Помогает диктовке с микрофона (Gboard, Яндекс Клавиатура), когда экран телефона погашен в автомобиле.</string>
+    <string name="dialog_profile_dpi">Масштаб экрана (DPI)</string>
+    <string name="profile_dpi_auto">Авто (экран авто)</string>
+    <string name="dialog_profile_orientation">Ориентация</string>
+    <string name="profile_orient_lock">Фиксировать альбомную</string>
+    <string name="profile_orient_follow">По приложению</string>
+    <string name="dialog_profile_inset">Отступ от краёв</string>
+    <string name="profile_inset_none">0 dp (без отступа)</string>
+
+    <!-- Выбор приложений -->
+    <string name="picker_nothing_chosen">Ничего не выбрано</string>
+    <string name="picker_chosen_count">Выбрано: %1$d</string>
+    <string name="picker_search_hint">Поиск приложений</string>
+    <string name="picker_hint">Отметьте приложения, которые нужно показывать в автомобиле.</string>
+    <string name="picker_section_other">Другие приложения</string>
+    <string name="picker_no_match">Нет приложений по запросу «%1$s»</string>
+
+    <!-- Предпросмотр на телефоне -->
+    <string name="preview_blocked_title">AnyAuto открыт на экране авто</string>
+    <string name="preview_blocked_body">Предпросмотр работает, когда экран авто не занят.</string>
+    <string name="preview_rail_direct">Прямой</string>
+    <string name="preview_rail_card">Карта</string>
+    <string name="preview_rail_keyboard">Клавиа.</string>
+    <string name="preview_rail_back">Назад</string>
+
+    <!-- Панель навигации композитора -->
+    <string name="nav_back">Назад</string>
+    <string name="nav_apps">Прил.</string>
+    <string name="nav_last">Пред.</string>
+    <string name="nav_keyboard">Клавиа.</string>
+    <string name="nav_close">Закрыть</string>
+    <string name="nav_hide">Скрыть</string>
+
+    <!-- Mirror и экраны автомобиля -->
+    <string name="mirror_no_previous_app">Нет предыдущего приложения</string>
+    <string name="mirror_pointer_pan_hint">Двигайте кольцо шайбой, затем нажмите для клика. На краю листает экран.</string>
+    <string name="mirror_pointer_buttons_hint">Стрелками двигайте кольцо, затем «Нажать». Стрелка у края прокручивает экран.</string>
+    <string name="mirror_cant_close_app">Не удалось закрыть приложение: %1$s</string>
+    <string name="mirror_keyboard_no_field">Сначала нажмите на поле ввода</string>
+    <string name="mirror_keyboard_old_android">Кнопка клавиатуры требует Android 11 или новее</string>
+    <string name="mirror_keyboard_error">Клавиатура: %1$s</string>
+    <string name="mirror_dark_screen_hint">Экран телефона выключен специально во время работы AnyAuto. Он включится при выходе из AnyAuto.</string>
+
+    <string name="problem_shizuku_root_title">Shizuku запущен с root</string>
+    <string name="problem_shizuku_root_text">На Android 13 и ниже запустите Shizuku через Беспроводную отладку.</string>
+    <string name="problem_cant_make_display">Не удалось создать экран для авто</string>
+    <string name="problem_cant_open_title">Не удалось открыть %1$s</string>
+    <string name="problem_cant_open_text">%1$s. Попробуйте снова из списка приложений.</string>
+    <string name="problem_cant_reach_service">Нет связи со службой экрана</string>
+    <string name="problem_install_shizuku">Установите Shizuku на телефон и запустите его.</string>
+    <string name="problem_start_shizuku">Запустите его в %1$s на телефоне.</string>
+    <string name="problem_update_shizuku">Обновите Shizuku на телефоне.</string>
+    <string name="problem_not_allowed_title">AnyAuto не разрешён в %1$s</string>
+    <string name="problem_not_allowed_text">Откройте AnyAuto на телефоне и нажмите «Разрешить».</string>
+
+    <string name="overlay_connecting_shizuku">Подключение к Shizuku…</string>
+    <string name="overlay_no_app_open">Нет открытого приложения</string>
+    <string name="overlay_choose_apps_hint">Откройте «Прил.» для запуска</string>
+
+    <string name="car_no_apps_chosen">Приложения ещё не выбраны.\nОткройте AnyAuto на телефоне и отметьте нужные приложения.</string>
+    <string name="car_app_open">Открыто</string>
+    <string name="car_apps_title">Приложения</string>
+    <string name="car_pointer_tap">Нажать</string>
+
+    <!-- Обновление -->
+    <string name="updater_no_apk">В релизе %1$s нет APK</string>
+    <string name="updater_save_failed">Не удалось сохранить обновление</string>
+    <string name="updater_not_apk">Загруженный файл не является APK</string>
+    <string name="updater_wrong_app">Загруженное обновление относится к другому приложению</string>
+    <string name="updater_not_newer">Загруженная версия не новее текущей</string>
+    <string name="updater_not_signed">Обновление не подписано</string>
+    <string name="updater_wrong_key">Обновление подписано другим ключом</string>
+    <string name="updater_http_error">GitHub вернул код %1$d</string>
+
+    <!-- Справка -->
+    <string name="help_setup_heading">Настройка</string>
+    <string name="help_setup_1">1. Установите Shizuku или форк (например, Shevery) и запустите через Беспроводную отладку. После каждой перезагрузки телефона запуск нужно повторять.</string>
+    <string name="help_setup_2">2. Для автомобиля установите AnyAuto через UnknownAuto: Android Auto принимает только приложения с подписью установщика Google Play. Эмулятор (DHU) работает без этого.</string>
+    <string name="help_setup_3">3. Выберите приложения для автомобиля. «Попробовать» открывает приложение в размере экрана авто на телефоне. Кнопка настроек рядом с приложением задаёт персональный DPI, ориентацию и отступ от краёв.</string>
+    <string name="help_setup_4">4. В автомобиле откройте AnyAuto и выберите приложение. Слева находится панель навигации: Назад, Прил., Пред., Клавиа., Закрыть и Скрыть. Перенести её направо можно в ⋮ → Сторона панели навигации.</string>
+    <string name="help_setup_5">5. На телефонах Xiaomi / HyperOS / MIUI дополнительно включите «Отладка по USB (Настройки безопасности)» в меню Для разработчиков, задайте Контроль активности: Без ограничений, включите Автозапуск и закрепите AnyAuto замком в недавних.</string>
+
+    <string name="help_running_heading">Работа на экране автомобиля</string>
+    <string name="help_running_1">На многих телефонах экран автомобиля работает независимо от телефона: телефон можно заблокировать или использовать как обычно. Там, где виртуальный экран гаснет вместе с телефоном, телефон не засыпает и держит экран выключенным. Кнопка питания усыпляет телефон (экран авто встаёт на паузу до касания). При выходе из AnyAuto телефон возвращается к обычному режиму.</string>
+    <string name="help_running_2">Чтобы пользоваться телефоном одновременно, включите ⋮ → Не гасить экран телефона.</string>
+    <string name="help_running_3">Если телефон сам включает экран или уходит в сон при гашении экрана, AnyAuto перестаёт его гасить, чтобы избежать мерцания, и запоминает настройку «Не гасить экран телефона».</string>
+    <string name="help_running_4">Нажмите на поле ввода, чтобы открыть клавиатуру на экране авто. Кнопка «Клавиа.» открывает или скрывает её. По умолчанию при открытии клавиатуры экран телефона кратко просыпается, чтобы работал голосовой ввод с микрофона; это поведение или вывод клавиатуры на телефон настраивается в ⋮ → Клавиатура.</string>
+    <string name="help_running_5">«Назад» — кнопка Назад приложения. «Прил.» открывает список приложений. «Пред.» мгновенно переключает два последних приложения. «Закрыть» выгружает приложение. «Скрыть» убирает панель на всю ширину экрана; кнопка панели в правом верхнем углу возвращает её обратно.</string>
+    <string name="help_running_6">Эта кнопка принадлежит Android Auto: она скрывается автоматически и появляется при касании экрана. Чтобы она не перекрывала интерфейс, отключите ⋮ → Во весь экран в авто.</string>
+    <string name="help_running_7">На Android 11 и новее опция ⋮ → Разделение экрана (Freeform) позволяет открыть второе приложение рядом с первым (60/40).</string>
+
+    <string name="help_knob_heading">Автомобили без сенсорного экрана</string>
+    <string name="help_knob_1">На авто с шайбой или тачпадом выберите кнопку панорамирования Android Auto (✥) справа внизу и нажмите: появится кольцо-указатель. Отклоняйте шайбу для перемещения (быстрые движения ускоряют шаг), нажмите шайбу для клика, затем снова нажмите кнопку панорамирования.</string>
+    <string name="help_knob_2">Движение за верхний или нижний край прокручивает экран. Наведите кольцо на панель навигации — оно переходит по кнопкам. Кнопка «Назад» на руле или консоли работает как Назад в приложении.</string>
+    <string name="help_knob_3">Через 10 секунд бездействия Android Auto скрывает кнопки, а кольцо пропадает. Следующее нажатие кнопки панорамирования не кликает — нажмите ещё раз, чтобы вернуть кольцо.</string>
+    <string name="help_knob_4">Нет кнопки панорамирования? Некоторые беспроводные адаптеры сообщают Android Auto, что экран сенсорный. Включите ⋮ → Кнопки указателя (шайба): на экране появятся «Нажать», «Готово» и стрелки для управления кольцом.</string>
+
+    <string name="help_updates_heading">Обновления</string>
+    <string name="help_updates_1">При открытии AnyAuto проверяет новую версию на GitHub. Если обновление готово, нажмите «Обновить» на главном экране, а затем «Установить» в UnknownAuto. Фоновых проверок нет; автопроверку можно выключить в ⋮ → Проверять обновления автоматически.</string>
+
+    <string name="help_limits_heading">Ограничения</string>
+    <string name="help_limits_1">Приложения с защищёнными окнами (банки, DRM-видео, инкогнито) отображаются чёрным экраном.</string>
+    <string name="help_limits_2">Кнопка клавиатуры требует Android 11 или новее.</string>
+    <string name="help_limits_3">Приложения на экране автомобиля обходят блокировку экрана телефона.</string>
+    <string name="help_limits_4">Экран автомобиля один, поэтому «Попробовать» недоступно, пока AnyAuto выведен в авто.</string>
+</resources>

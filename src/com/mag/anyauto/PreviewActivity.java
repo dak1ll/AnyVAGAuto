@@ -149,7 +149,7 @@ public final class PreviewActivity extends Activity implements SurfaceHolder.Cal
 
         blocked = Mirror.carShowing();
         if (blocked) {
-            showMessage("AnyAuto is on the car screen", "Try works when it isn't.");
+            showMessage(getString(R.string.preview_blocked_title), getString(R.string.preview_blocked_body));
             return;
         }
         ComponentName app = getIntent().getParcelableExtra(EXTRA_APP);
@@ -167,14 +167,14 @@ public final class PreviewActivity extends Activity implements SurfaceHolder.Cal
         rail.setBackground(bg);
         rail.setPadding(0, dp(12), 0, dp(12));
 
-        rail.addView(railButton(R.drawable.ic_close, "Close", v -> finish()));
+        rail.addView(railButton(R.drawable.ic_close, getString(R.string.action_close), v -> finish()));
         rail.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1));
-        direct = railButton(R.drawable.ic_touch, "Direct", v -> {
+        direct = railButton(R.drawable.ic_touch, getString(R.string.preview_rail_direct), v -> {
             directOn = !directOn;
             styleToggle(direct, directOn);
         });
         rail.addView(direct);
-        card = railButton(R.drawable.ic_card, "Card", v -> {
+        card = railButton(R.drawable.ic_card, getString(R.string.preview_rail_card), v -> {
             cardOn = !cardOn;
             styleToggle(card, cardOn);
             mirror.forceContent(cardOn ? cardRect(viewW, viewH) : null);
@@ -184,14 +184,14 @@ public final class PreviewActivity extends Activity implements SurfaceHolder.Cal
         rail.addView(card, cp);
         LinearLayout.LayoutParams kp = new LinearLayout.LayoutParams(dp(72), dp(64));
         kp.topMargin = dp(8);
-        rail.addView(railButton(R.drawable.ic_keyboard, "Keyboard", v -> mirror.toggleKeyboard(r -> {
-            String m = Mirror.keyboardMessage(r);
+        rail.addView(railButton(R.drawable.ic_keyboard, getString(R.string.preview_rail_keyboard), v -> mirror.toggleKeyboard(r -> {
+            String m = Mirror.keyboardMessage(this, r);
             if (m != null) Toast.makeText(this, m, Toast.LENGTH_SHORT).show();
         })), kp);
         rail.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1));
 
         // Back: filled accent, under the right thumb
-        LinearLayout back = (LinearLayout) railButton(R.drawable.ic_back, "Back", v -> mirror.back());
+        LinearLayout back = (LinearLayout) railButton(R.drawable.ic_back, getString(R.string.preview_rail_back), v -> mirror.back());
         back.setBackground(Ui.round(Ui.accent(this), dp(32)));
         ((ImageView) back.getChildAt(0)).setImageDrawable(Ui.icon(this, R.drawable.ic_back, Ui.onAccent(this)));
         ((TextView) back.getChildAt(1)).setTextColor(Ui.onAccent(this));

@@ -107,7 +107,7 @@ final class Updater {
             JSONObject a = assets.getJSONObject(i);
             if (isReleaseApkAsset(a.getString("name"))) url = a.getString("browser_download_url");
         }
-        if (url == null) throw new IllegalStateException("no APK in release " + version);
+        if (url == null) throw new IllegalStateException(c.getString(R.string.updater_no_apk, version));
 
         File dir = new File(c.getCacheDir(), DIR);
         dir.mkdirs();
@@ -120,7 +120,7 @@ final class Updater {
             throw new IllegalStateException(why);
         }
         clean(c, part); // older downloads go, this one stays
-        if (!part.renameTo(apk)) throw new IllegalStateException("could not save the update");
+        if (!part.renameTo(apk)) throw new IllegalStateException(c.getString(R.string.updater_save_failed));
         Prefs.setUpdateVersion(c, version);
         Log.i(TAG, "update " + version + " downloaded and checked");
         return new Result(version, null);
@@ -170,13 +170,13 @@ final class Updater {
     private static String verify(Context c, File apk) {
         PackageManager pm = c.getPackageManager();
         PackageInfo info = pm.getPackageArchiveInfo(apk.getPath(), PackageManager.GET_SIGNING_CERTIFICATES);
-        if (info == null) return "the download is not an APK";
-        if (!c.getPackageName().equals(info.packageName)) return "the download is another app";
-        if (info.getLongVersionCode() <= installedCode(c)) return "the download is not newer";
-        if (info.signingInfo == null) return "the download is not signed";
+        if (info == null) return c.getString(R.string.updater_not_apk);
+        if (!c.getPackageName().equals(info.packageName)) return c.getString(R.string.updater_wrong_app);
+        if (info.getLongVersionCode() <= installedCode(c)) return c.getString(R.string.updater_not_newer);
+        if (info.signingInfo == null) return c.getString(R.string.updater_not_signed);
         for (Signature s : info.signingInfo.getApkContentsSigners()) {
             if (!pm.hasSigningCertificate(c.getPackageName(), s.toByteArray(), PackageManager.CERT_INPUT_RAW_X509)) {
-                return "the update is signed with another key than this copy of AnyAuto";
+                return c.getString(R.string.updater_wrong_key);
             }
         }
         return null;
@@ -209,7 +209,7 @@ final class Updater {
             h.setRequestProperty("Accept", url.startsWith("https://api.github.com/")
                     ? "application/vnd.github+json" : "application/octet-stream");
             int code = h.getResponseCode();
-            if (code != 200) throw new IllegalStateException("GitHub answered " + code);
+            if (code != 200) throw new IllegalStateException(c.getString(R.string.updater_http_error, code));
             try (InputStream in = h.getInputStream()) {
                 byte[] b = new byte[64 * 1024];
                 int n;

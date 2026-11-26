@@ -1,4 +1,214 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AnyAuto</string>
+
+    <!-- Common actions -->
+    <string name="action_ok">OK</string>
+    <string name="action_close">Close</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_done">Done</string>
+    <string name="action_hide">Hide</string>
+    <string name="action_got_it">Got it</string>
+    <string name="action_allow">Allow</string>
+    <string name="action_try">Try</string>
+    <string name="action_choose_apps">Choose apps</string>
+    <string name="action_update">Update</string>
+    <string name="action_whats_new">What\'s new</string>
+    <string name="action_open_unknownauto">Open UnknownAuto</string>
+    <string name="action_get_unknownauto">Get UnknownAuto</string>
+    <string name="action_open_named">Open %1$s</string>
+    <string name="action_get_shizuku">Get Shizuku</string>
+    <string name="action_update_shizuku">Update Shizuku</string>
+    <string name="action_developer_options">Developer options</string>
+    <string name="action_disable_battery_limit">Disable limit</string>
+    <string name="action_app_settings">App settings</string>
+
+    <!-- Home screen & menus -->
+    <string name="section_in_car">In the car</string>
+    <plurals name="app_count">
+        <item quantity="one">%d app</item>
+        <item quantity="other">%d apps</item>
+    </plurals>
+    <string name="empty_no_apps_title">No apps in the car yet</string>
+    <string name="empty_no_apps_body">Choose the phone apps to show on the car screen.</string>
+
+    <string name="menu_full_screen">Full screen in the car</string>
+    <string name="menu_keep_phone_on">Keep the phone\'s screen on</string>
+    <string name="menu_keyboard">Keyboard</string>
+    <string name="menu_nav_side">Navigation bar side</string>
+    <string name="menu_pointer_buttons">Pointer buttons (knob)</string>
+    <string name="menu_split_mode">Split screen (Freeform)</string>
+    <string name="menu_auto_update">Check for updates automatically</string>
+    <string name="menu_check_updates">Check for updates now</string>
+    <string name="menu_help">Help</string>
+    <string name="menu_install_for_car">Install for the car</string>
+
+    <!-- Dialogs & toasts -->
+    <string name="dialog_pointer_title">Pointer buttons</string>
+    <string name="dialog_pointer_body">For cars with a knob where Android Auto shows no pan button (✥). Android Auto\'s buttons on the car screen get Pointer: press it, then use the arrows to move the ring and Tap to click there. Done brings the usual buttons back.</string>
+    <string name="dialog_nav_side_title">Navigation bar on the car screen</string>
+    <string name="nav_side_left">Left</string>
+    <string name="nav_side_right">Right</string>
+    <string name="dialog_installed_title">Installed for the car</string>
+    <string name="dialog_not_installed_title">Not installed for the car</string>
+    <string name="dialog_installed_body">AnyAuto was installed in a way Android Auto accepts. After an update, install it with UnknownAuto again.</string>
+    <string name="install_for_car_body">Android Auto only runs apps installed from Google Play. Reinstall AnyAuto with UnknownAuto before using it in a car. The desktop head unit works either way.</string>
+
+    <string name="toast_checking_updates">Checking for updates…</string>
+    <string name="toast_update_error">Couldn\'t check for updates: %1$s</string>
+    <string name="toast_update_ready">AnyAuto %1$s is ready to install</string>
+    <string name="toast_update_up_to_date">AnyAuto is up to date</string>
+
+    <!-- Status cards -->
+    <string name="card_on_car_title">On the car screen</string>
+    <string name="card_on_car_body_phone_on">The car is using the display. Try is unavailable meanwhile.</string>
+    <string name="card_on_car_body_phone_dark">The car is using the display. The phone stays awake with its screen off. Try is unavailable meanwhile.</string>
+
+    <string name="card_shizuku_root_title">%1$s runs as root</string>
+    <string name="card_shizuku_root_body">On Android 13 and older, Android won\'t give root the car display. In %1$s, start it with Wireless debugging instead.</string>
+    <string name="status_shizuku_running">%1$s is running</string>
+    <string name="status_shizuku_connecting">Connecting to %1$s…</string>
+    <string name="card_no_shizuku_title">Shizuku isn\'t installed</string>
+    <string name="card_no_shizuku_body">AnyAuto needs Shizuku or a Shizuku fork. It gives the app the rights adb has, without root.</string>
+    <string name="card_shizuku_stopped_title">%1$s isn\'t running</string>
+    <string name="card_shizuku_stopped_body">Start it in %1$s: Wireless debugging, then Start. It stops at every reboot.</string>
+    <string name="card_old_shizuku_title">Shizuku is too old</string>
+    <string name="card_old_shizuku_body">Update Shizuku to version 11 or newer.</string>
+    <string name="card_no_permission_title">Allow AnyAuto in %1$s</string>
+    <string name="card_no_permission_body">%1$s asks once. Choose Allow all the time.</string>
+
+    <string name="card_update_ready_title">AnyAuto %1$s is ready</string>
+    <string name="card_update_ready_body_ua">Tap Update, then Install in UnknownAuto. UnknownAuto keeps AnyAuto installed the way Android Auto accepts.</string>
+    <string name="card_update_ready_body_no_ua">Updates install with UnknownAuto, so Android Auto keeps accepting AnyAuto. Get UnknownAuto first.</string>
+
+    <string name="card_dark_goes_title">The phone\'s screen goes dark in the car</string>
+    <string name="card_dark_may_title">The phone\'s screen may go dark in the car</string>
+    <string name="card_dark_goes_body">On this phone, the car screen only runs while the phone is awake. So while the car shows AnyAuto, the phone stays awake with its screen off. That\'s on purpose, not a crash: the screen comes back when you leave AnyAuto in the car. To keep it on, turn on ⋮ → Keep the phone\'s screen on.</string>
+    <string name="card_dark_may_body">On some phones, the car screen only runs while the phone is awake. On those, while the car shows AnyAuto, the phone stays awake with its screen off. That\'s on purpose, not a crash: the screen comes back when you leave AnyAuto in the car. To keep it on, turn on ⋮ → Keep the phone\'s screen on.</string>
+
+    <!-- OEM / HyperOS diagnostics -->
+    <string name="card_hyperos_sec_title">Car touch input blocked</string>
+    <string name="card_hyperos_sec_body">Xiaomi / HyperOS requires \"USB debugging (Security settings)\" in Developer options so taps and keys work on the car display. Restart Shizuku after enabling it.</string>
+    <string name="card_battery_opt_title">Background battery limit active</string>
+    <string name="card_battery_opt_body">System battery optimization may suspend AnyAuto or break its connection while the car screen is active.</string>
+    <string name="card_hyperos_guide_title">Xiaomi / HyperOS background setup</string>
+    <string name="card_hyperos_guide_body">For stable work in the car, set Battery saver to No restrictions, enable Autostart in App settings, and lock AnyAuto in Recents.</string>
+
+    <!-- Per-app profile & keyboard dialogs -->
+    <string name="cd_app_profile">App profile</string>
+    <string name="profile_summary_dpi">%1$d dpi</string>
+    <string name="profile_summary_follow_app">Follow app</string>
+    <string name="profile_summary_inset">%1$d dp</string>
+    <string name="dialog_keyboard_where">Where the keyboard opens</string>
+    <string name="keyboard_on_car">On the car screen</string>
+    <string name="keyboard_on_phone">On the phone (keeps phone screen on)</string>
+    <string name="dialog_keyboard_voice_header">Voice input</string>
+    <string name="keyboard_wake_for_voice">Wake phone screen briefly for voice input</string>
+    <string name="keyboard_wake_for_voice_hint">Helps keyboard microphone dictation (e.g. Gboard, Yandex Keyboard) work when the phone screen is kept off in the car.</string>
+    <string name="dialog_profile_dpi">Display DPI</string>
+    <string name="profile_dpi_auto">Auto (car screen)</string>
+    <string name="dialog_profile_orientation">Orientation</string>
+    <string name="profile_orient_lock">Lock landscape</string>
+    <string name="profile_orient_follow">Follow app</string>
+    <string name="dialog_profile_inset">Safe edge inset</string>
+    <string name="profile_inset_none">0 dp (none)</string>
+
+    <!-- Picker -->
+    <string name="picker_nothing_chosen">Nothing chosen yet</string>
+    <string name="picker_chosen_count">%1$d chosen</string>
+    <string name="picker_search_hint">Search apps</string>
+    <string name="picker_hint">Tick the apps to show in the car.</string>
+    <string name="picker_section_other">Other apps</string>
+    <string name="picker_no_match">No apps match “%1$s”</string>
+
+    <!-- Preview -->
+    <string name="preview_blocked_title">AnyAuto is on the car screen</string>
+    <string name="preview_blocked_body">Try works when it isn\'t.</string>
+    <string name="preview_rail_direct">Direct</string>
+    <string name="preview_rail_card">Card</string>
+    <string name="preview_rail_keyboard">Keyboard</string>
+    <string name="preview_rail_back">Back</string>
+
+    <!-- Compositor navigation bar -->
+    <string name="nav_back">Back</string>
+    <string name="nav_apps">Apps</string>
+    <string name="nav_last">Last</string>
+    <string name="nav_keyboard">Keyboard</string>
+    <string name="nav_close">Close</string>
+    <string name="nav_hide">Hide</string>
+
+    <!-- Mirror & Car screens -->
+    <string name="mirror_no_previous_app">No previous app yet</string>
+    <string name="mirror_pointer_pan_hint">Move the ring, then press to click there. Push past an edge to scroll.</string>
+    <string name="mirror_pointer_buttons_hint">Use the arrows to move the ring, then Tap. An arrow at the edge scrolls.</string>
+    <string name="mirror_cant_close_app">Can\'t close the app: %1$s</string>
+    <string name="mirror_keyboard_no_field">Tap a text field first</string>
+    <string name="mirror_keyboard_old_android">The keyboard button needs Android 11 or newer</string>
+    <string name="mirror_keyboard_error">Keyboard: %1$s</string>
+    <string name="mirror_dark_screen_hint">Your phone\'s screen is off on purpose while AnyAuto runs. It comes back when you leave AnyAuto.</string>
+
+    <string name="problem_shizuku_root_title">Shizuku runs as root</string>
+    <string name="problem_shizuku_root_text">On Android 13 and older, start Shizuku with Wireless debugging instead.</string>
+    <string name="problem_cant_make_display">Can\'t make the car display</string>
+    <string name="problem_cant_open_title">Can\'t open %1$s</string>
+    <string name="problem_cant_open_text">%1$s. Try again from Apps.</string>
+    <string name="problem_cant_reach_service">Can\'t reach the display service</string>
+    <string name="problem_install_shizuku">Install Shizuku on the phone, then start it.</string>
+    <string name="problem_start_shizuku">Start it in %1$s on the phone.</string>
+    <string name="problem_update_shizuku">Update Shizuku on the phone.</string>
+    <string name="problem_not_allowed_title">AnyAuto isn\'t allowed in %1$s</string>
+    <string name="problem_not_allowed_text">Open AnyAuto on the phone and tap Allow.</string>
+
+    <string name="overlay_connecting_shizuku">Connecting to Shizuku…</string>
+    <string name="overlay_no_app_open">No app open</string>
+    <string name="overlay_choose_apps_hint">Choose Apps to open one</string>
+
+    <string name="car_no_apps_chosen">No apps chosen yet.\nOpen AnyAuto on the phone and tick the apps for the car.</string>
+    <string name="car_app_open">Open</string>
+    <string name="car_apps_title">Apps</string>
+    <string name="car_pointer_tap">Tap</string>
+
+    <!-- Updater -->
+    <string name="updater_no_apk">No APK in release %1$s</string>
+    <string name="updater_save_failed">Could not save the update</string>
+    <string name="updater_not_apk">The download is not an APK</string>
+    <string name="updater_wrong_app">The download is another app</string>
+    <string name="updater_not_newer">The download is not newer</string>
+    <string name="updater_not_signed">The download is not signed</string>
+    <string name="updater_wrong_key">The update is signed with another key than this copy of AnyAuto</string>
+    <string name="updater_http_error">GitHub answered %1$d</string>
+
+    <!-- Help -->
+    <string name="help_setup_heading">Set up</string>
+    <string name="help_setup_1">1. Install Shizuku, or a Shizuku fork such as Shevery, and start it (Wireless debugging, then Start). It has to be started again after every reboot.</string>
+    <string name="help_setup_2">2. For a car, install AnyAuto with UnknownAuto: Android Auto only runs apps installed from Google Play. The desktop head unit doesn\'t check.</string>
+    <string name="help_setup_3">3. Choose the apps for the car. Try shows an app at car size on this phone. Tap the tune icon next to an app to set its own display DPI, orientation lock, or safe edge inset.</string>
+    <string name="help_setup_4">4. In the car, open AnyAuto and pick an app. AnyAuto\'s navigation bar runs down the left of the car screen: Back, Apps, Last, Keyboard, Close and Hide. To have it on the right, choose ⋮ → Navigation bar side.</string>
+    <string name="help_setup_5">5. On Xiaomi / HyperOS / MIUI phones, also enable \"USB debugging (Security settings)\" in Developer options so car touches and keys work, set Battery saver to No restrictions, turn on Autostart, and lock AnyAuto in Recents.</string>
+
+    <string name="help_running_heading">While an app is on the car screen</string>
+    <string name="help_running_1">On many phones the car screen runs on its own and the phone is left alone: lock it or use it as usual. Where the car screen would sleep with the phone (Android 17 on a Pixel, for example), the phone stays awake with its screen off. The power button still puts it to sleep; the car screen then pauses until you tap it. When Android Auto stops showing AnyAuto, the phone goes back to how it was.</string>
+    <string name="help_running_2">To use the phone at the same time, turn on ⋮ → Keep the phone\'s screen on.</string>
+    <string name="help_running_3">If your phone turns its screen straight back on, or goes to sleep, when AnyAuto turns it off, AnyAuto stops doing that so the screen doesn\'t flicker, and turns on Keep the phone\'s screen on for later drives.</string>
+    <string name="help_running_4">Tap a text field and the keyboard opens on the car screen. The Keyboard button opens it for the selected text field, or closes it. By default, AnyAuto briefly wakes the phone screen while the car keyboard is open so microphone voice dictation works; you can change this or move the keyboard to the phone in ⋮ → Keyboard.</string>
+    <string name="help_running_5">Back is the app\'s own Back. Apps goes to the apps grid. Last switches directly between the two most recently used apps. Close closes the app, like swiping it away in Recents. Hide gives the app the whole width; the bar button at the top right of the car screen brings the bar back.</string>
+    <string name="help_running_6">That bar button is Android Auto\'s own: it floats over the app until it hides, and a tap on the screen shows it again. To keep it out of the app\'s way, turn off ⋮ → Full screen in the car.</string>
+    <string name="help_running_7">On Android 11 and newer, ⋮ → Split screen (Freeform) lets you open a second app alongside the first one in a 60/40 two-pane layout.</string>
+
+    <string name="help_knob_heading">Cars without a touch screen</string>
+    <string name="help_knob_1">With a rotary knob or a touchpad, select Android Auto\'s pan button (✥) at the bottom right and press: a ring, AnyAuto\'s pointer, appears. Push the knob to move it; quick pushes go further. Press the knob to click where the ring is, and press the pan button again for the next click.</string>
+    <string name="help_knob_2">Push past the top or bottom edge to scroll. Push the ring into the navigation bar and it lands on a button; up and down go from button to button. The car\'s Back button is the app\'s Back, and once you have used the pointer, Android Auto\'s buttons include Apps too.</string>
+    <string name="help_knob_3">After 10 seconds without the knob, Android Auto hides its buttons and the ring goes away. The next press of the pan button then clicks nothing; press it again to bring the ring back.</string>
+    <string name="help_knob_4">No pan button? Some wireless adapters tell Android Auto that the car has a touch screen. Turn on ⋮ → Pointer buttons (knob): Android Auto\'s buttons get Pointer (push the knob up to reach them), which turns them into Tap, Done and four arrows. Press an arrow to move the ring (quick presses go further), then Tap to click there. An arrow at the edge scrolls, and Done brings the usual buttons back. After 10 seconds without the knob, the focus goes back to Tap.</string>
+
+    <string name="help_updates_heading">Updates</string>
+    <string name="help_updates_1">When you open AnyAuto, it looks for a new version on GitHub. When one is ready, tap Update on the Home screen, then Install in UnknownAuto, so Android Auto keeps accepting AnyAuto. Nothing runs in the background. Turn it off with ⋮ → Check for updates automatically.</string>
+
+    <string name="help_limits_heading">Limits</string>
+    <string name="help_limits_1">Apps that protect their windows (banking, DRM video, incognito tabs) show black.</string>
+    <string name="help_limits_2">The Keyboard button needs Android 11 or newer.</string>
+    <string name="help_limits_3">Apps on the car screen skip the phone\'s lock.</string>
+    <string name="help_limits_4">There is one car display, so Try is unavailable while AnyAuto is on the car screen.</string>
 </resources>

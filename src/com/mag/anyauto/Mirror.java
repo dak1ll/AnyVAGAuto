@@ -355,7 +355,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         io.post(() -> {
             ComponentName next = history.swap();
             if (next == null) {
-                say("No previous app yet", false);
+                say(context.getString(R.string.mirror_no_previous_app), false);
                 return;
             }
             app = next;
@@ -422,7 +422,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
                     knobFound = true;
                 }
                 showPointer(true);
-                tellPointer("Move the ring, then press to click there. Push past an edge to scroll.");
+                tellPointer(context.getString(R.string.mirror_pointer_pan_hint));
             } else {
                 if (!panTouched && !panIdle) io.postDelayed(pointerClick, PAN_CLICK_MS);
                 else Log.d(TAG, "pan mode ended without a click (" + (panIdle ? "idle" : "touch") + ")");
@@ -450,7 +450,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
                 lastDir = -1;
                 wake();
                 showPointer(true);
-                tellPointer("Use the arrows to move the ring, then Tap. An arrow at the edge scrolls.");
+                tellPointer(context.getString(R.string.mirror_pointer_buttons_hint));
             } else if (!panning) {
                 showPointer(false);
             }
@@ -690,7 +690,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
                 switchLastApp();
                 break;
             case Compositor.NAV_KEYBOARD:
-                toggleKeyboard(r -> say(keyboardMessage(r), false));
+                toggleKeyboard(r -> say(keyboardMessage(context, r), false));
                 break;
             case Compositor.NAV_CLOSE:
                 closeApp();
@@ -716,7 +716,8 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             Log.i(TAG, "close " + (was == null ? "-" : was.flattenToShortString()) + ": " + r[0]);
             if (r[0] == null) return; // no service: nothing is shown anyway
             if (!"ok".equals(r[0]) && !"none".equals(r[0])) {
-                say("Can't close the app: " + (r[0].startsWith("close: ") ? r[0].substring(7) : r[0]), false);
+                say(context.getString(R.string.mirror_cant_close_app,
+                        r[0].startsWith("close: ") ? r[0].substring(7) : r[0]), false);
                 return;
             }
             app = null;
@@ -809,18 +810,18 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     }
 
     /** A short message for the keyboard button's answer, or null when the screen says enough. */
-    public static String keyboardMessage(String r) {
+    public static String keyboardMessage(Context c, String r) {
         if (r == null) return null;
         switch (r) {
             case "shown":
             case "hidden":
                 return null;
             case "no field":
-                return "Tap a text field first";
+                return c.getString(R.string.mirror_keyboard_no_field);
             case "old android":
-                return "The keyboard button needs Android 11 or newer";
+                return c.getString(R.string.mirror_keyboard_old_android);
             default:
-                return "Keyboard: " + (r.startsWith("error: ") ? r.substring(7) : r);
+                return c.getString(R.string.mirror_keyboard_error, r.startsWith("error: ") ? r.substring(7) : r);
         }
     }
 
@@ -1062,7 +1063,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             pushedOrientation = null;
             tempWakeActive = false;
             io.removeCallbacks(clearTempWake);
-            setProblem(shellProblem(Shell.state()));
+            setProblem(shellProblem(context, Shell.state()));
             return;
         }
         if (s != pushedTo) {
@@ -1097,9 +1098,9 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
                 pushedDpi = targetDpi;
                 if (displayId < 0) {
                     setProblem(Shell.rootOnOldAndroid()
-                            ? new Problem("Shizuku runs as root",
-                                    "On Android 13 and older, start Shizuku with Wireless debugging instead.")
-                            : new Problem("Can't make the car display", s.lastError()));
+                            ? new Problem(context.getString(R.string.problem_shizuku_root_title),
+                                    context.getString(R.string.problem_shizuku_root_text))
+                            : new Problem(context.getString(R.string.problem_cant_make_display), s.lastError()));
                     return;
                 }
                 if (wasNewDisplay) pushedOrientation = null;
@@ -1171,7 +1172,8 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
                     nextInSplit = true;
                 }
                 if (!"ok".equals(r)) {
-                    setProblem(new Problem("Can't open " + label(app), r + ". Try again from Apps."));
+                    setProblem(new Problem(context.getString(R.string.problem_cant_open_title, label(app)),
+                            context.getString(R.string.problem_cant_open_text, r)));
                     return;
                 }
                 splitPrimary = nextPrimary;
@@ -1186,7 +1188,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         } catch (DeadObjectException e) {
             lost(s);
         } catch (RemoteException e) {
-            setProblem(new Problem("Can't reach the display service", String.valueOf(e)));
+            setProblem(new Problem(context.getString(R.string.problem_cant_reach_service), String.valueOf(e)));
         }
     }
 
@@ -1200,7 +1202,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         if (s.phoneGroup() != 1 || Prefs.keepPhoneOn(context) || !Prefs.keyboardOnCar(context)) return;
         darkTold = true;
         Prefs.addDarkTold(context);
-        say("Your phone's screen is off on purpose while AnyAuto runs. It comes back when you leave AnyAuto.", true);
+        say(context.getString(R.string.mirror_dark_screen_hint), true);
     }
 
     private String label(ComponentName c) {
@@ -1241,7 +1243,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         resetSplitState();
         io.removeCallbacks(clearTempWake);
         Shell.lost(s);
-        setProblem(shellProblem(Shell.state()));
+        setProblem(shellProblem(context, Shell.state()));
     }
 
     private void drop(Surface s) {
@@ -1262,27 +1264,32 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             // the car shows the text in its own message box; the phone preview has only this
             compositor.overlay(Compositor.PROBLEM, p.title, car ? null : p.text);
         } else if (pushedTo == null && Shell.state() == Shell.State.CONNECTING) {
-            compositor.overlay(Compositor.CONNECTING, "Connecting to Shizuku…", null);
+            compositor.overlay(Compositor.CONNECTING, context.getString(R.string.overlay_connecting_shizuku), null);
         } else if (app == null) {
-            compositor.overlay(Compositor.IDLE, "No app open", car ? "Choose Apps to open one" : null);
+            compositor.overlay(Compositor.IDLE, context.getString(R.string.overlay_no_app_open),
+                    car ? context.getString(R.string.overlay_choose_apps_hint) : null);
         } else {
             compositor.overlay(Compositor.NONE, null, null);
         }
     }
 
     /** The car's and the phone's wording for a Shizuku state (no problem while connecting). */
-    static Problem shellProblem(Shell.State st) {
+    static Problem shellProblem(Context c, Shell.State st) {
         switch (st) {
             case NO_SHIZUKU:
-                return new Problem("Shizuku isn't installed", "Install Shizuku on the phone, then start it.");
+                return new Problem(c.getString(R.string.card_no_shizuku_title),
+                        c.getString(R.string.problem_install_shizuku));
             case NOT_RUNNING: {
                 String name = Shell.managerLabel();
-                return new Problem(name + " isn't running", "Start it in " + name + " on the phone.");
+                return new Problem(c.getString(R.string.card_shizuku_stopped_title, name),
+                        c.getString(R.string.problem_start_shizuku, name));
             }
             case OLD_SHIZUKU:
-                return new Problem("Shizuku is too old", "Update Shizuku on the phone.");
+                return new Problem(c.getString(R.string.card_old_shizuku_title),
+                        c.getString(R.string.problem_update_shizuku));
             case NO_PERMISSION:
-                return new Problem("AnyAuto isn't allowed in " + Shell.managerLabel(), "Open AnyAuto on the phone and tap Allow.");
+                return new Problem(c.getString(R.string.problem_not_allowed_title, Shell.managerLabel()),
+                        c.getString(R.string.problem_not_allowed_text));
             default:
                 return null;
         }

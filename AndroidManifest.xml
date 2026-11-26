@@ -14,6 +14,8 @@
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
     <!-- only to check GitHub for a new release while AnyAuto is open (Updater; can be turned off) -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- prompt the user to exempt AnyAuto from background battery limits -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <queries>
         <!-- the apps that can be put in the car: everything with a launcher icon -->
@@ -24,6 +26,8 @@
         <package android:name="moe.shizuku.privileged.api" />
         <!-- "Open UnknownAuto" when it is installed (install-for-the-car guidance) -->
         <package android:name="com.mag.unknownauto" />
+        <!-- MIUI/HyperOS Autostart settings screen -->
+        <package android:name="com.miui.securitycenter" />
     </queries>
 
     <application

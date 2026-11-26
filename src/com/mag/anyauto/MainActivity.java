@@ -54,6 +54,7 @@ public final class MainActivity extends Activity implements Shell.Listener {
     private View empty;
     private final AppAdapter adapter = new AppAdapter();
     private List<Apps.App> chosen = new ArrayList<>();
+    private volatile String lastServiceError;
     private final Runnable carChanged = this::refresh;
 
     @Override
@@ -71,7 +72,7 @@ public final class MainActivity extends Activity implements Shell.Listener {
         LinearLayout sec = new LinearLayout(this);
         sec.setOrientation(LinearLayout.HORIZONTAL);
         sec.setPadding(dp(16), dp(16), dp(16), dp(4));
-        section = Ui.text(this, "In the car", 14, true, Ui.accent(this));
+        section = Ui.text(this, getString(R.string.section_in_car), 14, true, Ui.accent(this));
         sec.addView(section, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         sectionCount = Ui.text(this, "", 14, false, Ui.text2(this));
         sec.addView(sectionCount);
@@ -90,7 +91,7 @@ public final class MainActivity extends Activity implements Shell.Listener {
             if (a != null) tryApp(a);
         });
 
-        Button choose = Ui.filled(this, "Choose apps");
+        Button choose = Ui.filled(this, getString(R.string.action_choose_apps));
         choose.setOnClickListener(v -> startActivity(new Intent(this, PickerActivity.class)));
 
         FrameLayout root = new FrameLayout(this);
@@ -132,6 +133,7 @@ public final class MainActivity extends Activity implements Shell.Listener {
                 refresh();
             });
         }, "anyauto-apps").start();
+        refreshServiceError();
         refresh();
         // only here, while AnyAuto is open; skipped when turned off or checked within the hour
         Updater.check(this, false, r -> refresh());
@@ -146,26 +148,46 @@ public final class MainActivity extends Activity implements Shell.Listener {
 
     @Override
     public void onShellChanged() {
+        refreshServiceError();
         refresh();
+    }
+
+    private void refreshServiceError() {
+        IDisplayService s = Shell.service();
+        if (s == null) {
+            lastServiceError = null;
+            return;
+        }
+        new Thread(() -> {
+            String err = null;
+            try {
+                err = s.lastError();
+            } catch (Throwable ignored) {
+            }
+            if (!TextUtils.equals(err, lastServiceError)) {
+                lastServiceError = err;
+                runOnUiThread(this::refresh);
+            }
+        }, "anyauto-health").start();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, MENU_FULL, 0, "Full screen in the car").setCheckable(true)
+        menu.add(0, MENU_FULL, 0, R.string.menu_full_screen).setCheckable(true)
                 .setChecked(Prefs.fullScreen(this));
-        menu.add(0, MENU_PHONE_ON, 1, "Keep the phone's screen on").setCheckable(true)
+        menu.add(0, MENU_PHONE_ON, 1, R.string.menu_keep_phone_on).setCheckable(true)
                 .setChecked(Prefs.keepPhoneOn(this));
-        menu.add(0, MENU_KEYBOARD, 2, "Keyboard");
-        menu.add(0, MENU_NAV_SIDE, 3, "Navigation bar side");
-        menu.add(0, MENU_POINTER, 3, "Pointer buttons (knob)").setCheckable(true)
+        menu.add(0, MENU_KEYBOARD, 2, R.string.menu_keyboard);
+        menu.add(0, MENU_NAV_SIDE, 3, R.string.menu_nav_side);
+        menu.add(0, MENU_POINTER, 3, R.string.menu_pointer_buttons).setCheckable(true)
                 .setChecked(Prefs.pointerButtons(this));
-        menu.add(0, MENU_SPLIT, 3, "Split screen (Freeform)").setCheckable(true)
+        menu.add(0, MENU_SPLIT, 3, R.string.menu_split_mode).setCheckable(true)
                 .setChecked(Prefs.splitMode(this));
-        menu.add(0, MENU_AUTO_UPDATE, 4, "Check for updates automatically").setCheckable(true)
+        menu.add(0, MENU_AUTO_UPDATE, 4, R.string.menu_auto_update).setCheckable(true)
                 .setChecked(Prefs.autoUpdate(this));
-        menu.add(0, MENU_CHECK_UPDATE, 5, "Check for updates now");
-        menu.add(0, MENU_HELP, 6, "Help");
-        menu.add(0, MENU_INSTALL, 7, "Install for the car");
+        menu.add(0, MENU_CHECK_UPDATE, 5, R.string.menu_check_updates);
+        menu.add(0, MENU_HELP, 6, R.string.menu_help);
+        menu.add(0, MENU_INSTALL, 7, R.string.menu_install_for_car);
         return true;
     }
 
@@ -192,11 +214,9 @@ public final class MainActivity extends Activity implements Shell.Listener {
             Mirror.settingsChanged();
             if (on) {
                 new AlertDialog.Builder(this)
-                        .setTitle("Pointer buttons")
-                        .setMessage("For cars with a knob where Android Auto shows no pan button (✥). "
-                                + "Android Auto's buttons on the car screen get Pointer: press it, then use the arrows "
-                                + "to move the ring and Tap to click there. Done brings the usual buttons back.")
-                        .setPositiveButton("OK", null)
+                        .setTitle(R.string.dialog_pointer_title)
+                        .setMessage(R.string.dialog_pointer_body)
+                        .setPositiveButton(R.string.action_ok, null)
                         .show();
             }
             return true;
@@ -215,11 +235,11 @@ public final class MainActivity extends Activity implements Shell.Listener {
             return true;
         }
         if (item.getItemId() == MENU_CHECK_UPDATE) {
-            android.widget.Toast.makeText(this, "Checking for updates…", android.widget.Toast.LENGTH_SHORT).show();
+            android.widget.Toast.makeText(this, R.string.toast_checking_updates, android.widget.Toast.LENGTH_SHORT).show();
             Updater.check(this, true, r -> {
-                String m = r.error != null ? "Couldn't check for updates: " + r.error
-                        : r.version != null ? "AnyAuto " + r.version + " is ready to install"
-                        : "AnyAuto is up to date";
+                String m = r.error != null ? getString(R.string.toast_update_error, r.error)
+                        : r.version != null ? getString(R.string.toast_update_ready, r.version)
+                        : getString(R.string.toast_update_up_to_date);
                 android.widget.Toast.makeText(this, m, android.widget.Toast.LENGTH_LONG).show();
                 refresh();
             });
@@ -230,15 +250,15 @@ public final class MainActivity extends Activity implements Shell.Listener {
             return true;
         }
         if (item.getItemId() == MENU_NAV_SIDE) {
-            String[] choices = {"Left", "Right"};
+            String[] choices = {getString(R.string.nav_side_left), getString(R.string.nav_side_right)};
             new AlertDialog.Builder(this)
-                    .setTitle("Navigation bar on the car screen")
+                    .setTitle(R.string.dialog_nav_side_title)
                     .setSingleChoiceItems(choices, Prefs.navRight(this) ? 1 : 0, (d, which) -> {
                         Prefs.setNavRight(this, which == 1);
                         Mirror.settingsChanged();
                         d.dismiss();
                     })
-                    .setNegativeButton("Close", null)
+                    .setNegativeButton(R.string.action_close, null)
                     .show();
             return true;
         }
@@ -248,20 +268,19 @@ public final class MainActivity extends Activity implements Shell.Listener {
         }
         if (item.getItemId() == MENU_INSTALL) {
             new AlertDialog.Builder(this)
-                    .setTitle(installedForCar(this) ? "Installed for the car" : "Not installed for the car")
+                    .setTitle(installedForCar(this)
+                            ? R.string.dialog_installed_title
+                            : R.string.dialog_not_installed_title)
                     .setMessage(installedForCar(this)
-                            ? "AnyAuto was installed in a way Android Auto accepts. After an update, install it with UnknownAuto again."
-                            : INSTALL_BODY)
+                            ? R.string.dialog_installed_body
+                            : R.string.install_for_car_body)
                     .setPositiveButton(unknownAutoLabel(this), (d, w) -> openUnknownAuto(this))
-                    .setNegativeButton("Close", null)
+                    .setNegativeButton(R.string.action_close, null)
                     .show();
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
-
-    private static final String INSTALL_BODY = "Android Auto only runs apps installed from Google Play. "
-            + "Reinstall AnyAuto with UnknownAuto before using it in a car. The desktop head unit works either way.";
 
     // ------------------------------------------------------------------ status cards
 
@@ -269,10 +288,10 @@ public final class MainActivity extends Activity implements Shell.Listener {
         cards.removeAllViews();
         boolean onCar = Mirror.carShowing();
         if (onCar) {
-            cards.addView(card(R.drawable.ic_car, "On the car screen",
-                    Prefs.phoneGroup(this) == 0 || Prefs.keepPhoneOn(this)
-                            ? "The car is using the display. Try is unavailable meanwhile."
-                            : "The car is using the display. The phone stays awake with its screen off. Try is unavailable meanwhile."));
+            cards.addView(card(R.drawable.ic_car, getString(R.string.card_on_car_title),
+                    getString(Prefs.phoneGroup(this) == 0 || Prefs.keepPhoneOn(this)
+                            ? R.string.card_on_car_body_phone_on
+                            : R.string.card_on_car_body_phone_dark)));
         }
         Shell.State st = Shell.state();
         // "Shizuku", or the fork the phone has instead ("Shevery")
@@ -280,60 +299,61 @@ public final class MainActivity extends Activity implements Shell.Listener {
         switch (st) {
             case READY:
                 if (Shell.rootOnOldAndroid()) {
-                    cards.addView(card(R.drawable.ic_shell, shizuku + " runs as root",
-                            "On Android 13 and older, Android won't give root the car display. In " + shizuku + ", start it with Wireless debugging instead.",
-                            Ui.filled(this, "Open " + shizuku), v -> openShizuku()));
+                    cards.addView(card(R.drawable.ic_shell, getString(R.string.card_shizuku_root_title, shizuku),
+                            getString(R.string.card_shizuku_root_body, shizuku),
+                            Ui.filled(this, getString(R.string.action_open_named, shizuku)), v -> openShizuku()));
                     break;
                 }
-                cards.addView(slim(Ui.icon(this, R.drawable.ic_check, Ui.accent(this)), null, shizuku + " is running"));
+                cards.addView(slim(Ui.icon(this, R.drawable.ic_check, Ui.accent(this)), null,
+                        getString(R.string.status_shizuku_running, shizuku)));
                 break;
             case CONNECTING:
                 ProgressBar p = new ProgressBar(this);
                 p.setIndeterminate(true);
-                cards.addView(slim(null, p, "Connecting to " + shizuku + "…"));
+                cards.addView(slim(null, p, getString(R.string.status_shizuku_connecting, shizuku)));
                 break;
             case NO_SHIZUKU:
-                cards.addView(card(R.drawable.ic_shell, "Shizuku isn't installed",
-                        "AnyAuto needs Shizuku or a Shizuku fork. It gives the app the rights adb has, without root.",
-                        Ui.filled(this, "Get Shizuku"), v -> openStore()));
+                cards.addView(card(R.drawable.ic_shell, getString(R.string.card_no_shizuku_title),
+                        getString(R.string.card_no_shizuku_body),
+                        Ui.filled(this, getString(R.string.action_get_shizuku)), v -> openStore()));
                 break;
             case NOT_RUNNING:
-                cards.addView(card(R.drawable.ic_shell, shizuku + " isn't running",
-                        "Start it in " + shizuku + ": Wireless debugging, then Start. It stops at every reboot.",
-                        Ui.filled(this, "Open " + shizuku), v -> openShizuku()));
+                cards.addView(card(R.drawable.ic_shell, getString(R.string.card_shizuku_stopped_title, shizuku),
+                        getString(R.string.card_shizuku_stopped_body, shizuku),
+                        Ui.filled(this, getString(R.string.action_open_named, shizuku)), v -> openShizuku()));
                 break;
             case OLD_SHIZUKU:
-                cards.addView(card(R.drawable.ic_shell, "Shizuku is too old",
-                        "Update Shizuku to version 11 or newer.",
-                        Ui.filled(this, "Update Shizuku"), v -> openStore()));
+                cards.addView(card(R.drawable.ic_shell, getString(R.string.card_old_shizuku_title),
+                        getString(R.string.card_old_shizuku_body),
+                        Ui.filled(this, getString(R.string.action_update_shizuku)), v -> openStore()));
                 break;
             case NO_PERMISSION:
-                cards.addView(card(R.drawable.ic_shell, "Allow AnyAuto in " + shizuku,
-                        shizuku + " asks once. Choose Allow all the time.",
-                        Ui.filled(this, "Allow"), v -> Shell.requestPermission()));
+                cards.addView(card(R.drawable.ic_shell, getString(R.string.card_no_permission_title, shizuku),
+                        getString(R.string.card_no_permission_body, shizuku),
+                        Ui.filled(this, getString(R.string.action_allow)), v -> Shell.requestPermission()));
                 break;
         }
         String update = Updater.readyVersion(this);
         if (update != null) {
             boolean ua = isUnknownAutoInstalled(this);
-            View c = card(R.drawable.ic_check, "AnyAuto " + update + " is ready",
-                    ua ? "Tap Update, then Install in UnknownAuto. UnknownAuto keeps AnyAuto installed the way Android Auto accepts."
-                            : "Updates install with UnknownAuto, so Android Auto keeps accepting AnyAuto. Get UnknownAuto first.",
-                    Ui.filled(this, ua ? "Update" : "Get UnknownAuto"),
+            View c = card(R.drawable.ic_check, getString(R.string.card_update_ready_title, update),
+                    getString(ua ? R.string.card_update_ready_body_ua : R.string.card_update_ready_body_no_ua),
+                    Ui.filled(this, getString(ua ? R.string.action_update : R.string.action_get_unknownauto)),
                     v -> {
                         if (ua) Updater.install(this);
                         else openUnknownAuto(this);
                     });
-            Button news = Ui.textButton(this, "What's new");
+            Button news = Ui.textButton(this, getString(R.string.action_whats_new));
             news.setOnClickListener(v -> Updater.openReleasePage(this));
             ((LinearLayout) c.findViewWithTag("buttons")).addView(news, 0);
             cards.addView(c);
         }
         long version = versionCode();
         if (!installedForCar(this) && !Prefs.installCardHidden(this, version)) {
-            View c = card(R.drawable.ic_car, "Not installed for the car", INSTALL_BODY,
+            View c = card(R.drawable.ic_car, getString(R.string.dialog_not_installed_title),
+                    getString(R.string.install_for_car_body),
                     Ui.filled(this, unknownAutoLabel(this)), v -> openUnknownAuto(this));
-            Button hide = Ui.textButton(this, "Hide");
+            Button hide = Ui.textButton(this, getString(R.string.action_hide));
             hide.setOnClickListener(v -> {
                 Prefs.hideInstallCard(this, version);
                 refresh();
@@ -343,17 +363,48 @@ public final class MainActivity extends Activity implements Shell.Listener {
             cards.addView(c);
         }
 
+        for (OemHealth.WarningKind w : OemHealth.check(this, lastServiceError)) {
+            if (w == OemHealth.WarningKind.HYPEROS_SECURITY_DEBUGGING) {
+                View c = card(R.drawable.ic_phone_alert,
+                        getString(R.string.card_hyperos_sec_title),
+                        getString(R.string.card_hyperos_sec_body),
+                        Ui.filled(this, getString(R.string.action_developer_options)),
+                        v -> OemHealth.openDeveloperSettings(this));
+                if (Shell.manager() != null) {
+                    Button openShizukuBtn = Ui.textButton(this, getString(R.string.action_open_named, shizuku));
+                    openShizukuBtn.setOnClickListener(v -> openShizuku());
+                    ((LinearLayout) c.findViewWithTag("buttons")).addView(openShizukuBtn, 0);
+                }
+                cards.addView(c);
+            } else if (w == OemHealth.WarningKind.BATTERY_OPTIMIZATION) {
+                cards.addView(card(R.drawable.ic_phone_alert,
+                        getString(R.string.card_battery_opt_title),
+                        getString(R.string.card_battery_opt_body),
+                        Ui.filled(this, getString(R.string.action_disable_battery_limit)),
+                        v -> OemHealth.openBatteryOptimization(this)));
+            } else if (w == OemHealth.WarningKind.HYPEROS_BACKGROUND_GUIDE && !Prefs.hyperosGuideHidden(this)) {
+                View c = card(R.drawable.ic_phone_alert,
+                        getString(R.string.card_hyperos_guide_title),
+                        getString(R.string.card_hyperos_guide_body),
+                        Ui.filled(this, getString(R.string.action_app_settings)),
+                        v -> OemHealth.openAppSettings(this));
+                Button gotIt = Ui.textButton(this, getString(R.string.action_got_it));
+                gotIt.setOnClickListener(v -> {
+                    Prefs.hideHyperosGuide(this);
+                    refresh();
+                });
+                ((LinearLayout) c.findViewWithTag("buttons")).addView(gotIt, 0);
+                cards.addView(c);
+            }
+        }
+
         // before the first drives: a black phone is on purpose, not a crash
         int group = Prefs.phoneGroup(this);
         if (!onCar && group != 0 && !Prefs.keepPhoneOn(this) && !Prefs.darkNoteHidden(this)) {
             View c = card(R.drawable.ic_phone_sleep,
-                    group == 1 ? "The phone's screen goes dark in the car" : "The phone's screen may go dark in the car",
-                    (group == 1 ? "On this phone, the car screen only runs while the phone is awake. So while"
-                            : "On some phones, the car screen only runs while the phone is awake. On those, while")
-                            + " the car shows AnyAuto, the phone stays awake with its screen off. That's on purpose, "
-                            + "not a crash: the screen comes back when you leave AnyAuto in the car. "
-                            + "To keep it on, turn on ⋮ → Keep the phone's screen on.",
-                    Ui.textButton(this, "Got it"), v -> {
+                    getString(group == 1 ? R.string.card_dark_goes_title : R.string.card_dark_may_title),
+                    getString(group == 1 ? R.string.card_dark_goes_body : R.string.card_dark_may_body),
+                    Ui.textButton(this, getString(R.string.action_got_it)), v -> {
                         Prefs.hideDarkNote(this);
                         refresh();
                     });
@@ -363,7 +414,7 @@ public final class MainActivity extends Activity implements Shell.Listener {
         boolean none = chosen.isEmpty();
         section.setVisibility(none ? View.GONE : View.VISIBLE);
         sectionCount.setVisibility(none ? View.GONE : View.VISIBLE);
-        sectionCount.setText(chosen.size() == 1 ? "1 app" : chosen.size() + " apps");
+        sectionCount.setText(getResources().getQuantityString(R.plurals.app_count, chosen.size(), chosen.size()));
         empty.setVisibility(none ? View.VISIBLE : View.GONE);
         adapter.notifyDataSetChanged();
     }
@@ -434,11 +485,11 @@ public final class MainActivity extends Activity implements Shell.Listener {
         ImageView iv = new ImageView(this);
         iv.setImageDrawable(Ui.icon(this, R.drawable.ic_car, Ui.text2(this)));
         e.addView(iv, new LinearLayout.LayoutParams(dp(64), dp(64)));
-        TextView t = Ui.text(this, "No apps in the car yet", 18, true, Ui.text(this));
+        TextView t = Ui.text(this, getString(R.string.empty_no_apps_title), 18, true, Ui.text(this));
         t.setPadding(0, dp(16), 0, dp(8));
         t.setGravity(Gravity.CENTER);
         e.addView(t);
-        TextView b = Ui.text(this, "Choose the phone apps to show on the car screen.", 14, false, Ui.text2(this));
+        TextView b = Ui.text(this, getString(R.string.empty_no_apps_body), 14, false, Ui.text2(this));
         b.setGravity(Gravity.CENTER);
         e.addView(b);
         return e;
@@ -471,7 +522,7 @@ public final class MainActivity extends Activity implements Shell.Listener {
     }
 
     static String unknownAutoLabel(Context c) {
-        return c.getPackageManager().getLaunchIntentForPackage(UNKNOWNAUTO) != null ? "Open UnknownAuto" : "Get UnknownAuto";
+        return c.getString(isUnknownAutoInstalled(c) ? R.string.action_open_unknownauto : R.string.action_get_unknownauto);
     }
 
     static void openUnknownAuto(Context c) {
@@ -544,7 +595,7 @@ public final class MainActivity extends Activity implements Shell.Listener {
                 textCol.addView(r.summary);
                 row.addView(textCol, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                 // the whole row is the target; the button only names it
-                r.tryIt = Ui.textButton(MainActivity.this, "Try");
+                r.tryIt = Ui.textButton(MainActivity.this, getString(R.string.action_try));
                 r.tryIt.setMinWidth(dp(64));
                 r.tryIt.setMinimumWidth(dp(64));
                 r.tryIt.setClickable(false);
@@ -553,7 +604,7 @@ public final class MainActivity extends Activity implements Shell.Listener {
                 r.settings = new ImageButton(MainActivity.this);
                 r.settings.setFocusable(false);
                 r.settings.setFocusableInTouchMode(false);
-                r.settings.setContentDescription("App profile");
+                r.settings.setContentDescription(getString(R.string.cd_app_profile));
                 r.settings.setScaleType(ImageView.ScaleType.CENTER);
                 r.settings.setBackground(new RippleDrawable(
                         ColorStateList.valueOf(Ui.accent(MainActivity.this) & 0x33FFFFFF),
@@ -588,9 +639,9 @@ public final class MainActivity extends Activity implements Shell.Listener {
         int inset = Prefs.appInsetDp(this, cn);
         if (dpi == 0 && lock && inset == 0) return null;
         List<String> parts = new ArrayList<>(3);
-        if (dpi > 0) parts.add(dpi + " dpi");
-        if (!lock) parts.add("Follow app");
-        if (inset > 0) parts.add(inset + " dp");
+        if (dpi > 0) parts.add(getString(R.string.profile_summary_dpi, dpi));
+        if (!lock) parts.add(getString(R.string.profile_summary_follow_app));
+        if (inset > 0) parts.add(getString(R.string.profile_summary_inset, inset));
         return TextUtils.join(" · ", parts);
     }
 
@@ -600,16 +651,16 @@ public final class MainActivity extends Activity implements Shell.Listener {
         body.setPadding(dp(20), dp(8), dp(20), dp(4));
 
         boolean curOnCar = Prefs.keyboardOnCar(this);
-        RadioGroup placeGroup = addRadioSection(body, "Where the keyboard opens",
-                new String[]{"On the car screen", "On the phone (keeps phone screen on)"},
+        RadioGroup placeGroup = addRadioSection(body, getString(R.string.dialog_keyboard_where),
+                new String[]{getString(R.string.keyboard_on_car), getString(R.string.keyboard_on_phone)},
                 new int[]{1, 0}, curOnCar ? 1 : 0, false);
 
-        TextView voiceHeader = Ui.text(this, "Voice input", 14, true, Ui.accent(this));
+        TextView voiceHeader = Ui.text(this, getString(R.string.dialog_keyboard_voice_header), 14, true, Ui.accent(this));
         voiceHeader.setPadding(0, dp(14), 0, dp(4));
         body.addView(voiceHeader);
 
         CheckBox wakeCheck = new CheckBox(this);
-        wakeCheck.setText("Wake phone screen briefly for voice input");
+        wakeCheck.setText(R.string.keyboard_wake_for_voice);
         wakeCheck.setTextColor(Ui.text(this));
         wakeCheck.setTextSize(15);
         wakeCheck.setButtonTintList(ColorStateList.valueOf(Ui.accent(this)));
@@ -618,7 +669,7 @@ public final class MainActivity extends Activity implements Shell.Listener {
         body.addView(wakeCheck);
 
         TextView caption = Ui.text(this,
-                "Helps keyboard microphone dictation (e.g. Gboard, Yandex Keyboard) work when the phone screen is kept off in the car.",
+                getString(R.string.keyboard_wake_for_voice_hint),
                 13, false, Ui.text2(this));
         caption.setPadding(dp(4), dp(2), 0, dp(4));
         body.addView(caption);
@@ -635,14 +686,14 @@ public final class MainActivity extends Activity implements Shell.Listener {
         ScrollView scroll = new ScrollView(this);
         scroll.addView(body);
         new AlertDialog.Builder(this)
-                .setTitle("Keyboard")
+                .setTitle(R.string.menu_keyboard)
                 .setView(scroll)
-                .setPositiveButton("Save", (d, w) -> {
+                .setPositiveButton(R.string.action_save, (d, w) -> {
                     Prefs.setKeyboardOnCar(this, selectedTag(placeGroup, curOnCar ? 1 : 0) == 1);
                     Prefs.setWakeForVoice(this, wakeCheck.isChecked());
                     Mirror.settingsChanged();
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 
@@ -653,47 +704,58 @@ public final class MainActivity extends Activity implements Shell.Listener {
 
         int curDpi = Prefs.appDpi(this, a.component, 0);
         int[] dpiVals = {0, 120, 160, 200, 240, 320};
-        String[] dpiLabels = {"Auto (car screen)", "120 dpi", "160 dpi", "200 dpi", "240 dpi", "320 dpi"};
+        String[] dpiLabels = {
+                getString(R.string.profile_dpi_auto),
+                getString(R.string.profile_summary_dpi, 120),
+                getString(R.string.profile_summary_dpi, 160),
+                getString(R.string.profile_summary_dpi, 200),
+                getString(R.string.profile_summary_dpi, 240),
+                getString(R.string.profile_summary_dpi, 320)
+        };
         if (curDpi > 0 && !containsInt(dpiVals, curDpi)) {
             dpiVals = appendInt(dpiVals, curDpi);
-            dpiLabels = appendString(dpiLabels, curDpi + " dpi");
+            dpiLabels = appendString(dpiLabels, getString(R.string.profile_summary_dpi, curDpi));
         }
-        RadioGroup dpiGroup = addRadioSection(body, "Display DPI", dpiLabels, dpiVals, curDpi, false);
+        RadioGroup dpiGroup = addRadioSection(body, getString(R.string.dialog_profile_dpi), dpiLabels, dpiVals, curDpi, false);
 
         boolean curLock = Prefs.appOrientationLock(this, a.component);
-        RadioGroup orientGroup = addRadioSection(body, "Orientation",
-                new String[]{"Lock landscape", "Follow app"},
+        RadioGroup orientGroup = addRadioSection(body, getString(R.string.dialog_profile_orientation),
+                new String[]{getString(R.string.profile_orient_lock), getString(R.string.profile_orient_follow)},
                 new int[]{1, 0}, curLock ? 1 : 0, true);
 
         int curInset = Prefs.appInsetDp(this, a.component);
         int[] insetVals = {0, 16, 32};
-        String[] insetLabels = {"0 dp (none)", "16 dp", "32 dp"};
+        String[] insetLabels = {
+                getString(R.string.profile_inset_none),
+                getString(R.string.profile_summary_inset, 16),
+                getString(R.string.profile_summary_inset, 32)
+        };
         if (curInset > 0 && !containsInt(insetVals, curInset)) {
             insetVals = appendInt(insetVals, curInset);
-            insetLabels = appendString(insetLabels, curInset + " dp");
+            insetLabels = appendString(insetLabels, getString(R.string.profile_summary_inset, curInset));
         }
-        RadioGroup insetGroup = addRadioSection(body, "Safe edge inset", insetLabels, insetVals, curInset, true);
+        RadioGroup insetGroup = addRadioSection(body, getString(R.string.dialog_profile_inset), insetLabels, insetVals, curInset, true);
 
         ScrollView scroll = new ScrollView(this);
         scroll.addView(body);
         new AlertDialog.Builder(this)
                 .setTitle(a.label)
                 .setView(scroll)
-                .setPositiveButton("Save", (d, w) -> {
+                .setPositiveButton(R.string.action_save, (d, w) -> {
                     Prefs.setAppDpi(this, a.component, selectedTag(dpiGroup, curDpi));
                     Prefs.setAppOrientationLock(this, a.component, selectedTag(orientGroup, curLock ? 1 : 0) == 1);
                     Prefs.setAppInsetDp(this, a.component, selectedTag(insetGroup, curInset));
                     adapter.notifyDataSetChanged();
                     Mirror.settingsChanged();
                 })
-                .setNeutralButton("Reset", (d, w) -> {
+                .setNeutralButton(R.string.action_reset, (d, w) -> {
                     Prefs.setAppDpi(this, a.component, 0);
                     Prefs.setAppOrientationLock(this, a.component, true);
                     Prefs.setAppInsetDp(this, a.component, 0);
                     adapter.notifyDataSetChanged();
                     Mirror.settingsChanged();
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 

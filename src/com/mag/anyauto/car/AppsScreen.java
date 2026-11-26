@@ -21,6 +21,7 @@ import androidx.lifecycle.LifecycleOwner;
 import com.mag.anyauto.Apps;
 import com.mag.anyauto.Mirror;
 import com.mag.anyauto.Prefs;
+import com.mag.anyauto.R;
 
 import java.util.List;
 
@@ -60,8 +61,8 @@ final class AppsScreen extends Screen {
         List<Apps.App> apps = Apps.chosen(c);
         if (apps.isEmpty()) {
             return new MessageTemplate.Builder(
-                    "No apps chosen yet.\nOpen AnyAuto on the phone and tick the apps for the car.")
-                    .setTitle("AnyAuto")
+                    c.getString(R.string.car_no_apps_chosen))
+                    .setTitle(c.getString(R.string.app_name))
                     .setHeaderAction(Action.APP_ICON)
                     .setIcon(CarIcon.APP_ICON)
                     .build();
@@ -82,11 +83,11 @@ final class AppsScreen extends Screen {
                         mirror.open(a.component);
                         getScreenManager().pop();
                     });
-            if (a.component.equals(open)) item.setText("Open");
+            if (a.component.equals(open)) item.setText(c.getString(R.string.car_app_open));
             list.addItem(item.build());
         }
         return new GridTemplate.Builder()
-                .setTitle("Apps")
+                .setTitle(c.getString(R.string.car_apps_title))
                 .setHeaderAction(open != null ? Action.BACK : Action.APP_ICON)
                 .setSingleList(list.build())
                 .build();
