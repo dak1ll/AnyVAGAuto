@@ -37,10 +37,14 @@ import java.net.URL;
  */
 final class Updater {
     private static final String TAG = "AnyAuto";
-    static final String RELEASES_API = "https://api.github.com/repos/GitMag/AnyAuto/releases/latest";
-    static final String RELEASES_PAGE = "https://github.com/GitMag/AnyAuto/releases/latest";
+    static final String RELEASES_API = "https://api.github.com/repos/dak1ll/AnyVAGAuto/releases/latest";
+    static final String RELEASES_PAGE = "https://github.com/dak1ll/AnyVAGAuto/releases/latest";
     private static final long MIN_INTERVAL_MS = 60 * 60 * 1000L;
     private static final String DIR = "update";
+
+    static boolean isReleaseApkAsset(String name) {
+        return name != null && name.startsWith("AnyAuto-") && name.endsWith(".apk");
+    }
 
     /** What a check found. */
     static final class Result {
@@ -101,7 +105,7 @@ final class Updater {
         JSONArray assets = release.getJSONArray("assets");
         for (int i = 0; i < assets.length(); i++) {
             JSONObject a = assets.getJSONObject(i);
-            if (a.getString("name").toLowerCase().endsWith(".apk")) url = a.getString("browser_download_url");
+            if (isReleaseApkAsset(a.getString("name"))) url = a.getString("browser_download_url");
         }
         if (url == null) throw new IllegalStateException("no APK in release " + version);
 

@@ -87,11 +87,24 @@ cp build/base.apk build/unsigned.apk
 (cd build/dex && zip -q ../unsigned.apk classes*.dex)
 if [ -n "$(ls -A build/javares)" ]; then (cd build/javares && zip -qr ../unsigned.apk .); fi
 $BT/zipalign -f 4 build/unsigned.apk build/aligned.apk
-[ -f keys/anyauto.keystore ] || { mkdir -p keys; keytool -genkeypair -keystore keys/anyauto.keystore \
-    -storepass android -keypass android -alias anyauto -keyalg RSA -keysize 2048 \
-    -validity 10000 -dname "CN=AnyAuto" >/dev/null 2>&1; }
-$BT/apksigner -J-enable-native-access=ALL-UNNAMED sign --ks keys/anyauto.keystore \
-    --ks-pass pass:android --ks-key-alias anyauto --out $APK build/aligned.apk
+KEYSTORE="${KEYSTORE:-keys/anyauto.keystore}"
+KS_PASS="${KS_PASS:-android}"
+KEY_ALIAS="${KEY_ALIAS:-anyauto}"
+KEY_PASS="${KEY_PASS:-$KS_PASS}"
+if [ ! -f "$KEYSTORE" ]; then
+    if [ "$KEYSTORE" = "keys/anyauto.keystore" ]; then
+        mkdir -p keys
+        keytool -genkeypair -keystore "$KEYSTORE" \
+            -storepass "$KS_PASS" -keypass "$KEY_PASS" -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 \
+            -validity 10000 -dname "CN=AnyAuto" >/dev/null 2>&1
+    else
+        echo "keystore not found: $KEYSTORE" >&2
+        exit 1
+    fi
+fi
+$BT/apksigner -J-enable-native-access=ALL-UNNAMED sign --ks "$KEYSTORE" \
+    --ks-pass "pass:$KS_PASS" --ks-key-alias "$KEY_ALIAS" --key-pass "pass:$KEY_PASS" \
+    --out $APK build/aligned.apk
 rm -f $APK.idsig
 
 # ---- 7. sanity checks: the car service, its permissions and the key classes

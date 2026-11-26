@@ -36,7 +36,7 @@ import java.util.List;
  */
 public final class MainActivity extends Activity implements Shell.Listener {
     static final String UNKNOWNAUTO = "com.mag.unknownauto";
-    static final String UNKNOWNAUTO_RELEASES = "https://github.com/GitMag/UnknownAuto/releases/latest";
+    static final String UNKNOWNAUTO_RELEASES = "https://github.com/dak1ll/VAGAuto/releases/latest";
     private static final int MENU_HELP = 1, MENU_INSTALL = 2, MENU_KEYBOARD = 3, MENU_FULL = 4, MENU_PHONE_ON = 5,
             MENU_AUTO_UPDATE = 6, MENU_CHECK_UPDATE = 7, MENU_NAV_SIDE = 8, MENU_POINTER = 9;
 
