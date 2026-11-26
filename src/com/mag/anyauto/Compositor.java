@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit;
  * instead: a glyph, a title and maybe a hint, rendered with a Canvas into a bitmap of the content
  * size and drawn as a second texture.
  *
- * <p>The car's <b>navigation bar</b> (Back, Apps, Keyboard, Close, Hide) is a third texture, drawn
+ * <p>The car's <b>navigation bar</b> (Back, Apps, Last, Keyboard, Close, Hide) is a third texture, drawn
  * into its own rect beside the content; {@link Mirror} hit-tests the taps with {@link #navButton}.
  *
  * <p>On cars with a rotary knob or a touchpad, the <b>pointer</b> (a ring around the point it

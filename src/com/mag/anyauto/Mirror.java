@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
  * area, else the whole surface. The display is sized to the content rect, and car coordinates
  * are moved into it before they reach {@link Touch}.
  *
- * <p>On the car, AnyAuto's <b>navigation bar</b> (Back, Apps, Keyboard, Close, Hide) takes a band
+ * <p>On the car, AnyAuto's <b>navigation bar</b> (Back, Apps, Last, Keyboard, Close, Hide) takes a band
  * at the left (or, by the setting, the right) of the full-width view, beside the app; taps in it
  * are AnyAuto's, not the app's.
  *
@@ -224,6 +224,8 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     private ComponentName app;        // what should be on the display
     private final AppHistory<ComponentName> history = new AppHistory<>();
     private ComponentName splitPrimary;
+    private boolean splitTwoPanes;
+    private boolean launchedInSplit;
     private IDisplayService pushedTo; // the service the state below belongs to
     private boolean pushedOn;
     private int pushedW, pushedH, pushedDpi, effectiveDpi;
@@ -719,7 +721,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             }
             app = null;
             launched = null;
-            splitPrimary = null;
+            resetSplitState();
             history.clearCurrent();
             Prefs.clearLast(context);
             relayout();
@@ -857,7 +859,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         if (previewShowing == this) previewShowing = null;
         io.post(() -> {
             setTempKeyboardWake(false);
-            splitPrimary = null;
+            resetSplitState();
             touch.cancel();
             IDisplayService s = pushedTo;
             if (s != null) {
@@ -1075,6 +1077,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             io.removeCallbacks(clearTempWake);
             displayId = -1;
             launched = null;
+            resetSplitState();
         }
         try {
             if (content.isEmpty()) {
@@ -1134,25 +1137,46 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
                 if (keep) tellDark(s);
             }
             boolean split = car && Build.VERSION.SDK_INT >= 30 && Prefs.splitMode(context);
-            if (!split) splitPrimary = null;
+            if (!split) {
+                if (launchedInSplit && app != null) {
+                    launched = null;
+                }
+                resetSplitState();
+            }
             if (app != null && !app.equals(launched)) {
                 String r;
+                ComponentName nextPrimary = splitPrimary;
+                boolean nextTwoPanes = splitTwoPanes;
+                boolean nextInSplit = false;
                 if (!split) {
                     r = s.launch(app);
-                } else if (splitPrimary == null || splitPrimary.equals(app)) {
-                    splitPrimary = app;
+                } else if (splitPrimary == null) {
                     r = s.launch(app);
+                    nextPrimary = app;
+                    nextTwoPanes = false;
+                } else if (splitPrimary.equals(app)) {
+                    if (splitTwoPanes) {
+                        r = s.launchInBounds(app, toRect(splitZoneBounds(w, h, false)));
+                        nextInSplit = true;
+                    } else {
+                        r = s.launch(app);
+                    }
                 } else {
                     String rPrimary = s.launchInBounds(splitPrimary, toRect(splitZoneBounds(w, h, false)));
                     if (!"ok".equals(rPrimary)) {
                         Log.w(TAG, "split primary launch " + splitPrimary.flattenToShortString() + ": " + rPrimary);
                     }
                     r = s.launchInBounds(app, toRect(splitZoneBounds(w, h, true)));
+                    nextTwoPanes = true;
+                    nextInSplit = true;
                 }
                 if (!"ok".equals(r)) {
                     setProblem(new Problem("Can't open " + label(app), r + ". Try again from Apps."));
                     return;
                 }
+                splitPrimary = nextPrimary;
+                splitTwoPanes = nextTwoPanes;
+                launchedInSplit = nextInSplit;
                 launched = app;
                 Log.i(TAG, "opened " + app.flattenToShortString() + " on display " + displayId);
                 compositor.nav(navBar, navSkip, navRight, true, history.canSwap(), dpi);
@@ -1202,12 +1226,19 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         }
     }
 
+    private void resetSplitState() {
+        splitPrimary = null;
+        splitTwoPanes = false;
+        launchedInSplit = false;
+    }
+
     private void lost(IDisplayService s) {
         Log.w(TAG, "display service died");
         pushedTo = null;
         displayId = -1;
         pushedOrientation = null;
         tempWakeActive = false;
+        resetSplitState();
         io.removeCallbacks(clearTempWake);
         Shell.lost(s);
         setProblem(shellProblem(Shell.state()));

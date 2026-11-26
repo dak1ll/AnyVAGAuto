@@ -90,6 +90,8 @@ public final class DisplayService extends IDisplayService.Stub {
     private boolean tempPhoneOn;
     // whether the virtual display locks to landscape (true) or lets the app decide (false)
     private boolean orientationLock = true;
+    // whether any task on the display was launched in Freeform windowing mode
+    private boolean freeformUsed;
     // the car shows AnyAuto (keepRunning)
     private boolean carOn;
     // the display has a display group of its own, so it keeps running while the phone sleeps
@@ -581,13 +583,24 @@ public final class DisplayService extends IDisplayService.Stub {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         // an existing task of the app moves to the launch display (checked on Android 17)
         ActivityOptions opts = ActivityOptions.makeBasic().setLaunchDisplayId(displayId);
-        if (bounds != null && !bounds.isEmpty() && Build.VERSION.SDK_INT >= 30) {
-            try {
-                // WINDOWING_MODE_FREEFORM = 5
-                ActivityOptions.class.getMethod("setLaunchWindowingMode", int.class).invoke(opts, 5);
-                opts.setLaunchBounds(bounds);
-            } catch (Throwable t) {
-                Log.w(TAG, "freeform bounds unsupported: " + describe(t));
+        if (Build.VERSION.SDK_INT >= 30) {
+            if (bounds != null && !bounds.isEmpty()) {
+                try {
+                    // WINDOWING_MODE_FREEFORM = 5
+                    ActivityOptions.class.getMethod("setLaunchWindowingMode", int.class).invoke(opts, 5);
+                    opts.setLaunchBounds(bounds);
+                    freeformUsed = true;
+                } catch (Throwable t) {
+                    Log.w(TAG, "freeform bounds unsupported: " + describe(t));
+                }
+            } else if (freeformUsed) {
+                try {
+                    // WINDOWING_MODE_FULLSCREEN = 1
+                    ActivityOptions.class.getMethod("setLaunchWindowingMode", int.class).invoke(opts, 1);
+                    opts.setLaunchBounds(null);
+                } catch (Throwable t) {
+                    Log.w(TAG, "fullscreen restore unsupported: " + describe(t));
+                }
             }
         }
         Bundle options = opts.toBundle();
@@ -661,6 +674,7 @@ public final class DisplayService extends IDisplayService.Stub {
                         : info.baseActivity.flattenToShortString()) + ") " + (ok ? "removed" : "not removed"));
                 if (ok) removed++;
             }
+            freeformUsed = false;
             return removed > 0 ? "ok" : "none";
         } catch (Throwable t) {
             lastError = "close: " + describe(t);
@@ -718,6 +732,7 @@ public final class DisplayService extends IDisplayService.Stub {
     @Override
     public synchronized void close() {
         tempPhoneOn = false;
+        freeformUsed = false;
         if (phone != null) phone.releaseNow();
         if (carLock != null && carLock.isHeld()) carLock.release();
         if (display != null) {
