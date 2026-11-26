@@ -1,189 +1,155 @@
-# AnyAuto
+# AnyAuto (форк dak1ll/AnyVAGAuto)
 
-[![Download APK](https://img.shields.io/github/v/release/GitMag/AnyAuto?label=download%20APK&logo=android&color=success)](https://github.com/GitMag/AnyAuto/releases/latest)
-[![Support on Ko-fi](https://img.shields.io/badge/support-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/forsblomdev)
+[![Download APK](https://img.shields.io/github/v/release/dak1ll/AnyVAGAuto?label=download%20APK&logo=android&color=success)](https://github.com/dak1ll/AnyVAGAuto/releases/latest)
 
-<p align="center"><img src="docs/icon.svg" alt="AnyAuto icon" width="128"></p>
+<p align="center"><img src="docs/icon.svg" alt="Иконка AnyAuto" width="128"></p>
 
-AnyAuto puts **ordinary phone apps on the Android Auto screen**: a browser, a video app,
-Settings, or anything else with a launcher icon. You don't change the apps. AnyAuto runs them
-on a car-sized virtual display and draws it onto the car screen. Touch screens work as you'd
-expect, and cars with a rotary knob or a touchpad get a pointer.
+**AnyAuto** выводит **обычные приложения телефона на экран Android Auto**: браузер, видео, навигацию, настройки и любые другие приложения с иконкой в лаунчере. Сами приложения не модифицируются — AnyAuto запускает их на виртуальном дисплее размером с экран автомобиля и рисует его напрямую в поверхность Android Auto. Поддерживаются сенсорные экраны, а также автомобили с поворотной шайбой или тачпадом.
 
-It uses [Shizuku](https://shizuku.rikka.app/), so you don't need root or a computer in the
-car. No account, no analytics. The only thing it does online is check GitHub for a new version
-when you open it, and you can turn that off.
+Для работы используется [Shizuku](https://shizuku.rikka.app/) (или его форк вроде [Shevery](https://github.com/HmnDev-Tech/shevery)), поэтому **root-права и компьютер в автомобиле не нужны**. В приложении нет аккаунтов и аналитики; единственный сетевой запрос — проверка обновлений на GitHub при открытии главного экрана (при желании отключается в меню).
 
-**[Download the APK](https://github.com/GitMag/AnyAuto/releases/latest)** from the latest release.
+Это русскоязычный и расширенный форк проекта [GitMag/AnyAuto](https://github.com/GitMag/AnyAuto) под лицензией **GPL-3.0** (см. раздел [Лицензия и благодарности](#лицензия-и-благодарности)).
 
-<p align="center"><img src="docs/screenshots/car-video.png" alt="YouTube playing Big Buck Bunny full screen on the Android Auto screen through AnyAuto, with AnyAuto's navigation bar (Back, Apps, Keyboard, Close, Hide) at the left" width="800"></p>
+**[Скачать последний релиз (`AnyAuto-*.apk`)](https://github.com/dak1ll/AnyVAGAuto/releases/latest)**
 
-<p align="center"><em>YouTube on the Android Auto screen, with AnyAuto's navigation bar at the left.
-Video: <a href="https://peach.blender.org/">Big Buck Bunny</a> © Blender Foundation, CC BY 3.0.</em></p>
+<p align="center"><img src="docs/screenshots/car-video.png" alt="Воспроизведение видео на экране Android Auto через AnyAuto с панелью навигации слева" width="800"></p>
 
 <p align="center">
-  <img src="docs/screenshots/phone-home.png" alt="AnyAuto's home screen: Shizuku is running, seven apps chosen for the car, each with a Try button" width="260">
+  <img src="docs/screenshots/phone-home.png" alt="Главный экран AnyAuto на телефоне" width="260">
   &nbsp;
-  <img src="docs/screenshots/phone-picker.png" alt="Choose apps: search at the top, the apps in the car ticked, other apps below" width="260">
+  <img src="docs/screenshots/phone-picker.png" alt="Экран выбора приложений" width="260">
 </p>
 
-<p align="center">
-  <img src="docs/screenshots/car-app.png" alt="Firefox showing a Wikipedia page on the Android Auto screen, with AnyAuto's navigation bar at the left" width="400">
-  &nbsp;
-  <img src="docs/screenshots/car-dashboard.png" alt="Android Auto's dashboard with the app in AnyAuto's card on the left and the media card on the right" width="400">
-</p>
+---
 
-<p align="center"><em>The apps you chose, a browser on the car screen, and AnyAuto on the Android Auto dashboard.</em></p>
+## Перед установкой (ВАЖНО)
 
-## What you need
+1. **Удалите оригинальные версии от `GitMag`, если они были установлены ранее.**
+   Перед установкой этого форка обязательно удалите старые сборки `AnyAuto` и `UnknownAuto` от `GitMag`. У форка **другой ключ подписи**, поэтому Android отклонит обновление поверх оригинала.
+2. **Схема установки без root (2 APK + Shizuku):**
+   - Установите **[Shizuku](https://shizuku.rikka.app/)** ([GitHub Releases](https://github.com/RikkaApps/Shizuku/releases/latest)) **или** форк **[Shevery](https://github.com/HmnDev-Tech/shevery)** (рекомендуется для автозапуска после перезагрузки). *APK Shizuku/Shevery в этот репозиторий не включается — скачивайте только из официальных источников.*
+   - Установите **[UnknownAuto (`dak1ll/VAGAuto`)](https://github.com/dak1ll/VAGAuto/releases/latest)** как обычное приложение.
+   - Скачайте **`AnyAuto-<версия>.apk`** со страницы [релизов `dak1ll/AnyVAGAuto`](https://github.com/dak1ll/AnyVAGAuto/releases/latest) и установите его **СТРОГО ЧЕРЕЗ `UnknownAuto`** (`Выбрать APK или XAPK…` → `Установить для Android Auto`), чтобы Android Auto видел метку установки из Google Play (`com.android.vending`).
+   - В реальном автомобиле обычный `adb install` или установка из проводника не сработают: Android Auto скрывает приложения без метки Google Play. (Эмулятор DHU работает при любой установке.)
 
-- An Android phone with Android 10 or newer.
-- **[Shizuku](https://shizuku.rikka.app/)**, installed and running. On Android 11 and newer it
-  starts on the phone itself; Android 10 needs a computer after every reboot. On a rooted phone
-  with Android 13 or older, start Shizuku with Wireless debugging, not with root. Shizuku forks
-  work too, also ones with their own package name such as
-  [Shevery](https://github.com/HmnDev-Tech/shevery).
-- **[UnknownAuto](https://github.com/GitMag/UnknownAuto)**. Android Auto only runs car apps
-  installed from Google Play, and UnknownAuto installs AnyAuto so that it counts as one.
+Подробное руководство по настройке автозапуска Shizuku / Shevery без root (включая MacroDroid / Tasker и чек-лист Xiaomi / HyperOS):
+👉 **[docs/shizuku-autostart-ru.md](docs/shizuku-autostart-ru.md)**
 
-## Install and set up
+---
 
-1. Download **AnyAuto-&lt;version&gt;.apk** from the
-   [latest release](https://github.com/GitMag/AnyAuto/releases/latest) on the phone.
-2. Open UnknownAuto, tap **Load APK or XAPK…**, pick the APK and tap **Install**.
-3. Start Shizuku: follow *Set up Shizuku* in
-   [UnknownAuto's README](https://github.com/GitMag/UnknownAuto#set-up-shizuku-once). No
-   computer is needed, but Shizuku has to be started again after every reboot.
-4. Open AnyAuto, tap **Allow** on the Shizuku card and choose **Allow all the time**.
-5. Tap **Choose apps** and tick the apps you want in the car.
-6. If AnyAuto isn't in Android Auto's launcher, add it under Android Auto settings →
-   *Customize launcher*.
+## Улучшения форка по сравнению с оригинальным GitMag/AnyAuto
 
-AnyAuto's home screen shows a card whenever something still needs doing.
+1. **Персональные профили для каждого приложения:**
+   - **Масштаб экрана (DPI):** `Авто` (по экрану авто) или фиксированные значения `120`, `160`, `200`, `240`, `320` dpi.
+   - **Отступ от краёв:** `0 dp`, `16 dp` или `32 dp` (удобно, если интерфейс приложения обрезается закруглениями экрана авто).
+   - **Ориентация:** `Фиксировать альбомную` или `По приложению`.
+2. **Голосовой ввод без мерцания экрана (`PhonePower`):**
+   - Опция `⋮ → Клавиатура → Кратко будить экран телефона для голоса` временно пробуждает экран телефона при открытии клавиатуры / микрофона (для корректной диктовки в Gboard, Яндекс Клавиатуре и др.), не вызывая ложного срабатывания защиты от мерцания (`fights`).
+3. **Быстрое переключение и разделение экрана:**
+   - Кнопка **`Пред.`** (`Last`) в боковой панели навигации на экране авто — мгновенно переключает между двумя последними открытыми приложениями.
+   - Экспериментальный режим **`⋮ → Разделение экрана (Freeform)`** (Android 11+) — вывод второго приложения рядом с основным (60/40).
+4. **Диагностика Xiaomi / HyperOS / MIUI и батареи (`OemHealth`):**
+   - На главном экране автоматически проверяются ограничения батареи, необходимость фонового автозапуска и перехват ошибок `INJECT_EVENTS` (с подсказкой включить `Отладка по USB (Настройки безопасности)` и быстрыми кнопками перехода в нужные разделы настроек).
+5. **Полная русская локализация (`res/values-ru/strings.xml`):**
+   - Переведены главный экран, выбор приложений, настройки профилей, справка, карточки диагностики, уведомления и экран автомобиля (включая адаптацию ширины боковой панели навигации).
+6. **Обновления из форка (`Updater`):**
+   - Проверка новых версий в `Updater` направлена на релизы `dak1ll/AnyVAGAuto` (`AnyAuto-*.apk`) с сохранением проверки совпадающей подписи и переходом на `dak1ll/VAGAuto` для установки через `UnknownAuto`.
 
-**Updates:** when you open AnyAuto, it checks GitHub for a new release. The home screen then
-shows *AnyAuto x.y is ready*: tap **Update**, then **Install** in UnknownAuto. To turn this off,
-use ⋮ → **Check for updates automatically**.
+---
 
-## Use
+## Что требуется
 
-**On the phone:** **Try** next to an app opens it at car size on the phone, so you can check it
-before a drive. The ⋮ menu has the settings and **Help**.
+- Смартфон с **Android 10 или новее** (на Android 10 без root Shizuku запускается по проводу от ПК после каждой перезагрузки; на **Android 11–17** всё настраивается на самом телефоне через *Беспроводную отладку*).
+- **[Shizuku](https://shizuku.rikka.app/)** или **[Shevery](https://github.com/HmnDev-Tech/shevery)**.
+- **[UnknownAuto (`dak1ll/VAGAuto`)](https://github.com/dak1ll/VAGAuto/releases/latest)**.
 
-**In the car:** open AnyAuto and pick an app. AnyAuto's navigation bar runs down the side of the
-car screen:
+---
 
-- **Back:** the app's Back.
-- **Apps:** pick another app.
-- **Keyboard:** opens or closes the keyboard for the selected text field. Tapping a text field
-  opens it too.
-- **Close:** closes the app, like swiping it away in Recents.
-- **Hide:** the app gets the whole width. The button at the top right brings the bar back.
+## Быстрая настройка и использование
 
-Settings in ⋮: the bar on the left or right, full screen, the keyboard on the car screen or the
-phone, keeping the phone's screen on, and pointer buttons for a knob.
+1. Установите **Shizuku** (или **Shevery**) и запустите его через *Беспроводную отладку* (инструкция в [docs/shizuku-autostart-ru.md](docs/shizuku-autostart-ru.md)).
+2. Установите **UnknownAuto**, затем установите **AnyAuto** через UnknownAuto.
+3. Откройте **AnyAuto**, на запросе Shizuku выберите **Разрешать всегда**.
+4. Нажмите **Выбрать приложения** и отметьте нужные программы. При необходимости настройте DPI, ориентацию и отступы иконкой профиля рядом с приложением.
+5. Проверьте работу кнопкой **Попробовать** на телефоне.
+6. Если AnyAuto не появился в меню Android Auto, добавьте его в *Настройки Android Auto → Настроить панель запуска*.
 
-### Cars without a touch screen
+### Управление в автомобиле
 
-With a rotary knob (such as BMW's iDrive) or a touchpad, select Android Auto's pan button
-(✥, bottom right) and press it. A ring appears on the app:
+Боковая панель навигации (слева или справа — настраивается в `⋮ → Сторона панели навигации`):
+- **Назад** — кнопка «Назад» внутри открытого приложения.
+- **Прил.** — возврат к сетке выбранных приложений.
+- **Пред.** — мгновенное переключение на предыдущее приложение.
+- **Клавиа.** — открыть или скрыть клавиатуру для активного поля ввода.
+- **Закрыть** — выгрузить текущее приложение.
+- **Скрыть** — скрыть панель навигации на весь экран (возвращается кнопкой в правом верхнем углу).
 
-- **Move:** push the knob, or slide on the touchpad. Quick pushes the same way go further.
-- **Click:** press the knob. For the next click, press the pan button again.
-- **Scroll:** push past the top or bottom edge.
-- **AnyAuto's bar:** push the ring into the bar and it lands on a button; up and down go from
-  button to button.
-- **Back:** the car's Back button. Android Auto's buttons at the top right also get **Apps**.
+Для автомобилей с **поворотной шайбой / тачпадом** поддерживается как штатный режим панорамирования Android Auto (`✥`), так и встроенный режим `⋮ → Кнопки указателя (шайба)` (для беспроводных адаптеров, скрывающих `✥`).
 
-After 10 seconds without the knob, the ring goes away. Pressing the pan button then clicks
-nothing; press it again to get the ring back.
+---
 
-**No pan button?** Some wireless adapters tell Android Auto that the car has a touch screen, so
-✥ never shows. Turn on ⋮ → **Pointer buttons (knob)** in AnyAuto. Android Auto's buttons at
-the top right then get **Pointer** (✥); push the knob up to reach them. Press Pointer, and they
-become **Tap**, **Done** and four arrows: turn the knob to an arrow and press to move the ring
-(quick presses go further), then press **Tap** to click there. An arrow at the edge scrolls, and
-the ring goes into AnyAuto's bar like above. **Done** brings the usual buttons back. After
-10 seconds without the knob, Android Auto puts the focus back on **Tap**.
+## Известные ограничения без root
 
-## Good to know
+- **Чёрный экран в некоторых приложениях (`FLAG_SECURE`):** банковские клиенты, стриминги с DRM (Netflix, Кинопоиск и др.) и вкладки инкогнито защищают свои окна от захвата/отрисовки на стороннем виртуальном дисплее и отображаются чёрным экраном. YouTube и обычные браузеры работают.
+- **Звук:** AnyAuto транслирует видео/интерфейс, но не перехватывает аудиопоток. Звук воспроизводится через Bluetooth-подключение к ГУ автомобиля или через аудиоканал Android Auto отдельно.
+- **Кнопка клавиатуры:** принудительное открытие/скрытие экранной клавиатуры кнопкой `Клавиа.` требует **Android 11 или новее**.
+- **Xiaomi / HyperOS / MIUI:** без включённого пункта **`Отладка по USB (Настройки безопасности)`** в *Для разработчиков* нажатия на экране автомобиля работать не будут (`SecurityException: INJECT_EVENTS`). Подробнее — в [docs/shizuku-autostart-ru.md](docs/shizuku-autostart-ru.md).
+- **GrapheneOS и некоторые кастомные прошивки с AOSP-установщиком:** Android Auto принимает приложение, только если установку запустил системный установщик Google (`com.google.android.packageinstaller`). Если в прошивке только AOSP-установщик (`com.android.packageinstaller`), метка Google Play игнорируется и без root/DHU/Google Play Internal Testing Android Auto не покажет AnyAuto.
+- **Автозапуск Shizuku после перезагрузки:** Android отключает Беспроводную отладку при ребуте и требует Wi-Fi для её включения — подробности и решения см. в [docs/shizuku-autostart-ru.md](docs/shizuku-autostart-ru.md).
 
-- **The phone's screen:** on many phones the car screen runs on its own, and you can use the
-  phone as usual. On some (Android 17 on a Pixel, for example) the car screen would sleep with
-  the phone, so AnyAuto keeps the phone awake with its screen off. That's on purpose, and the
-  phone goes back to normal when you leave AnyAuto. To use the phone meanwhile, turn on
-  ⋮ → **Keep the phone's screen on**.
-- **Apps on the car screen skip the phone's lock,** like Android Auto's own apps.
-- **Some apps show black:** apps that protect their windows, such as banking apps, Netflix and
-  other DRM video, and Chrome incognito tabs. YouTube works.
-- **Portrait-only apps** show upright in a column in the middle of the car screen.
-- **AnyAuto is listed as a navigation app** because only those get the whole car screen. It
-  never starts navigation, so Google Maps keeps your directions.
-- **GrapheneOS and some custom ROMs can't list AnyAuto.** Android Auto accepts a car app only
-  when the install was started by Google's package installer (`com.google.android.packageinstaller`).
-  These ROMs ship the AOSP installer (`com.android.packageinstaller`) instead, so the Google Play
-  mark is ignored and *Unknown sources* doesn't cover this kind of app — AnyAuto never appears,
-  and UnknownAuto can't fix it. Without root the only ways in are to put your own build on a
-  Google Play internal-testing track, or to use a developer head unit (such as AAWireless's
-  developer mode).
+**Безопасность за рулём:** AnyAuto не блокирует приложения во время движения. Используйте видео и отвлекающие приложения только на стоянке и соблюдайте ПДД.
 
-**Drive safely.** AnyAuto doesn't lock anything while the car is moving. Use video and other
-distracting apps only when the car is parked, and follow the traffic laws where you drive.
+---
 
-## How it works
+## Сборка и тестирование из исходников (без Gradle)
 
-```
-Android Auto (car screen)                AnyAuto app process              Shizuku process (shell user)
- NavigationTemplate surface ──Surface──▶ MirrorScreen ─▶ Mirror ──AIDL──▶ DisplayService
- taps, drags, flings, pinches, knob ───▶ Touch / pointer → MotionEvents ─▶ inject into the display
-                                                                          VirtualDisplay (trusted, public,
-                                                                          always unlocked, own focus)
-                                                                          └─ any app, started on it
- Compositor (GL): the display's frames → the visible part of the car surface
+Используются только стандартные инструменты Android SDK (`platforms;android-35` и `build-tools;35.0.0`) и JDK 17.
+
+### Linux / macOS
+```sh
+./build.sh            # собрать anyauto.apk
+./build.sh verify     # собрать, проверить подпись и дамп манифеста
+./build.sh install    # собрать, установить через adb install -r и запустить
 ```
 
-- **Shizuku** gives AnyAuto's `DisplayService` the shell user's rights, which it needs to make a
-  *trusted* virtual display that other apps can start on, and to inject input into it (like
-  scrcpy's `--new-display`).
-- **No video encoding:** the display draws straight into Android Auto's surface, through OpenGL,
-  into the part of the car screen you can see.
-- **Input:** Android Auto gives a navigation app gestures, not raw touches (a tap point, scroll
-  distances, flings and pinch steps), and AnyAuto turns them back into touches. A knob or
-  touchpad only reaches the app in Android Auto's pan mode, so AnyAuto draws its own pointer
-  there.
-- **Keyboard:** the display's keyboard policy is *local*, so the keyboard opens on the car
-  screen.
-- **The phone's screen:** where the virtual display shares the phone's display group, AnyAuto
-  keeps the phone awake and powers off only the phone's own panel.
-
-## Build
-
-With the plain Android SDK tools (no Gradle; build-tools 35 and the android-35 platform):
-
-```
-./build.sh            # build anyauto.apk
-./build.sh install    # build, adb install -r, then open it (ANDROID_SERIAL picks the device)
+### Windows (PowerShell, из корня `aa-mod`)
+```powershell
+python build-win.py anyauto --verify
 ```
 
-The first build downloads the libraries into `libs/` and creates a signing key in `keys/`. An APK
-you build yourself has your own key, so it can't update the release APK: uninstall that first.
-The desktop head unit doesn't need UnknownAuto; a plain `adb install` is enough there.
+### Модульные тесты (JUnit 4)
+Тесты расположены в `test/com/mag/anyauto/` (`UpdaterTest`, `AppProfilePrefsTest`, `PhonePowerWakePolicyTest`, `MirrorHistoryTest`, `OemHealthTest`):
+```sh
+# После ./build.sh verify (или python build-win.py anyauto --verify):
+# В Linux/macOS (при наличии junit-4.13.2.jar и hamcrest-core-1.3.jar в build/test-libs/):
+. libs/deps.env
+LIB_CP=$(echo "$LIB_JARS" | tr ' ' ':')
+javac --release 17 -encoding UTF-8 \
+  -classpath "build/classes:$LIB_CP:$ANDROID_HOME/platforms/android-35/android.jar:build/test-libs/junit-4.13.2.jar:build/test-libs/hamcrest-core-1.3.jar" \
+  -d build/test test/com/mag/anyauto/*.java
+java -cp "build/test:build/classes:$LIB_CP:$ANDROID_HOME/platforms/android-35/android.jar:build/test-libs/junit-4.13.2.jar:build/test-libs/hamcrest-core-1.3.jar" \
+  org.junit.runner.JUnitCore \
+  com.mag.anyauto.UpdaterTest \
+  com.mag.anyauto.AppProfilePrefsTest \
+  com.mag.anyauto.PhonePowerWakePolicyTest \
+  com.mag.anyauto.MirrorHistoryTest \
+  com.mag.anyauto.OemHealthTest
+```
 
-`src/com/mag/anyauto/` holds the phone app and the Shizuku service, `src/com/mag/anyauto/car/`
-the Android Auto side. Logs: `adb logcat -s AnyAuto AnyAuto.shell AnyAuto.car`.
+### GitHub Actions CI и релизы (`.github/workflows/release.yml`)
 
-## Support
+Для публикации релизов по тегам `v*` (ассет **`AnyAuto-${{ github.ref_name }}.apk`**, требуемый `Updater.isReleaseApkAsset`) необходимо настроить в настройках репозитория **4 секрета GitHub Actions**:
+- `KEYSTORE_B64` — keystore-файл в Base64 (например, `base64 -w0 release.keystore`).
+- `KS_PASS` — пароль хранилища ключей.
+- `KEY_ALIAS` — alias ключа подписи.
+- `KEY_PASS` — пароль ключа подписи.
 
-AnyAuto is free and stays free. If it got your apps into the car and you'd like to say
-thanks, you can [buy me a coffee on Ko‑fi](https://ko-fi.com/forsblomdev).
+На PR и push в ветки при отсутствии секретов CI собирает и проверяет APK с временным dev-ключом. На тегах `refs/tags/v*` сборка **намеренно завершается ошибкой, если `KEYSTORE_B64` не задан**, чтобы никогда не публиковать релиз с одноразовым ключом (иначе встроенный `Updater` не сможет обновлять приложение).
 
-## License
+---
 
-Copyright (C) 2026 GitMag
+## Лицензия и благодарности
 
-AnyAuto is free software: you can use, study, share and change it under the terms of the
-[GNU General Public License, version 3](LICENSE). If you distribute AnyAuto or a modified
-version of it, you must make its source code available under the same license.
-
-The libraries built into the APK keep their own licenses: AndroidX and the Car App Library
-(Apache-2.0), and the Shizuku API (Apache-2.0).
+- Оригинальный проект: **[GitMag/AnyAuto](https://github.com/GitMag/AnyAuto)** (Copyright © 2026 GitMag).
+- Форк распространяется на условиях **[GNU General Public License v3.0 (GPL-3.0)](LICENSE)** — все модификации и производные работы должны распространяться с открытым исходным кодом под той же лицензией.
+- Включаемые библиотеки сохраняют свои лицензии: AndroidX, Car App Library и Shizuku API (Apache-2.0).
