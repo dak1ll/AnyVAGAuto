@@ -26,14 +26,6 @@ final class OemHealth {
         HYPEROS_BACKGROUND_GUIDE
     }
 
-    static final class Warning {
-        final WarningKind kind;
-
-        Warning(WarningKind kind) {
-            this.kind = kind;
-        }
-    }
-
     private OemHealth() {
     }
 

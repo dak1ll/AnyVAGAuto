@@ -220,6 +220,7 @@ public final class DisplayService extends IDisplayService.Stub {
 
     @Override
     public synchronized void wakeForKeyboard(boolean active) {
+        if (active && !carOn) return;
         if (tempPhoneOn == active) return;
         tempPhoneOn = active;
         applyPhoneMode();

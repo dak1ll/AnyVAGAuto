@@ -153,21 +153,25 @@ public final class MainActivity extends Activity implements Shell.Listener {
     }
 
     private void refreshServiceError() {
-        IDisplayService s = Shell.service();
-        if (s == null) {
+        final IDisplayService expected = Shell.service();
+        if (expected == null) {
             lastServiceError = null;
             return;
         }
         new Thread(() -> {
             String err = null;
             try {
-                err = s.lastError();
+                err = expected.lastError();
             } catch (Throwable ignored) {
             }
-            if (!TextUtils.equals(err, lastServiceError)) {
-                lastServiceError = err;
-                runOnUiThread(this::refresh);
-            }
+            final String nextError = err;
+            runOnUiThread(() -> {
+                if (Shell.service() != expected) return;
+                if (!TextUtils.equals(nextError, lastServiceError)) {
+                    lastServiceError = nextError;
+                    refresh();
+                }
+            });
         }, "anyauto-health").start();
     }
 

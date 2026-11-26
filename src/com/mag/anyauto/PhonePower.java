@@ -231,11 +231,7 @@ final class PhonePower {
             if (!armed) return;
             holdLock();
             if (on) {
-                setPhonePower(Display.STATE_UNKNOWN);
-                Display d = dm.getDisplay(Display.DEFAULT_DISPLAY);
-                if (!pm.isInteractive() || (d != null && d.getState() == Display.STATE_OFF)) {
-                    wakeUp();
-                }
+                restoreDisplayForTempWake();
             } else {
                 settleUntil = SystemClock.uptimeMillis() + WAKE_SETTLE_MS;
                 if (policy.shouldBlank()) blank();
@@ -273,12 +269,18 @@ final class PhonePower {
         if (policy.shouldBlank()) {
             blank();
         } else if (tempWake) {
-            setPhonePower(Display.STATE_UNKNOWN);
-            Display d = dm.getDisplay(Display.DEFAULT_DISPLAY);
-            if (!pm.isInteractive() || (d != null && d.getState() == Display.STATE_OFF)) wakeUp();
+            restoreDisplayForTempWake();
         }
         h.removeCallbacks(watch);
         h.postDelayed(watch, WATCH_MS);
+    }
+
+    private void restoreDisplayForTempWake() {
+        setPhonePower(Display.STATE_UNKNOWN);
+        Display d = dm.getDisplay(Display.DEFAULT_DISPLAY);
+        if (!pm.isInteractive() || (d != null && d.getState() == Display.STATE_OFF)) {
+            wakeUp();
+        }
     }
 
     private final Runnable watch = new Runnable() {

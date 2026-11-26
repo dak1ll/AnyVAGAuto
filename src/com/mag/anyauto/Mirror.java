@@ -831,10 +831,10 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         if (m != null) {
             if (m.buttonsOn && !Prefs.pointerButtons(m.context)) m.pointerButtons(false);
             m.io.post(() -> {
+                m.applyContent();
                 if (!Prefs.wakeForVoice(m.context) || !Prefs.keyboardOnCar(m.context) || Prefs.keepPhoneOn(m.context)) {
                     m.setTempKeyboardWake(false);
                 }
-                m.applyContent();
             });
             m.main.post(m.listener::onMirrorChanged); // Android Auto's buttons (Pointer)
         } else {
@@ -1009,7 +1009,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             content.set(r);
             effectiveDpi = targetDpi;
             Log.i(TAG, "content " + content.toShortString() + " of " + screenW + "x" + screenH + "@" + targetDpi);
-            compositor.content(content, targetDpi);
+            compositor.content(content, dpi);
             touch.area(content.width(), content.height(), targetDpi, null);
         }
         if (px >= 0) showPointer(pointerShown); // still inside the app and the bar
