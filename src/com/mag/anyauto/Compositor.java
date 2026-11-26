@@ -130,7 +130,7 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
         renderNav();
         draw();
     };
-    private int dpi = 160;
+    private int dpi = 160, navDpi = 160;
     private int cursorTex, cursorDownTex, cursorSize, cursorDpi;
     private float cursorX, cursorY;
     private boolean cursorShown, cursorDown;
@@ -241,14 +241,18 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
      * edge or the left; its buttons start {@code skipTop} px below the rect's top (on the right,
      * below Android Auto's own button). All buttons but Apps are dimmed while no app is open.
      */
-    void nav(Rect r, int skipTop, boolean right, boolean appOpen) {
+    void nav(Rect r, int skipTop, boolean right, boolean appOpen, int dpi) {
         Rect copy = new Rect(r);
+        int d = Math.max(1, dpi);
         gl.post(() -> {
-            if (copy.equals(nav) && skipTop == navSkip && right == navRight && appOpen == navAppOpen) return;
+            if (copy.equals(nav) && skipTop == navSkip && right == navRight && appOpen == navAppOpen && d == navDpi) {
+                return;
+            }
             nav.set(copy);
             navSkip = skipTop;
             navRight = right;
             navAppOpen = appOpen;
+            navDpi = d;
             renderNav();
             draw();
         });
@@ -510,7 +514,7 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
         navReady = false;
         if (nav.isEmpty()) return;
         int w = nav.width(), h = nav.height();
-        float s = dpi / 160f, pad = navPad(dpi);
+        float s = navDpi / 160f, pad = navPad(navDpi);
         float slot = (h - navSkip - 2 * pad) / NAV_ICONS.length;
         if (slot <= 0) return;
         int glyph = Math.round(Math.min(28 * s, slot * 0.45f));

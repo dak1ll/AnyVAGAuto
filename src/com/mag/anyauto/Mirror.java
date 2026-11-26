@@ -167,16 +167,18 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     private ComponentName app;        // what should be on the display
     private IDisplayService pushedTo; // the service the state below belongs to
     private boolean pushedOn;
-    private int pushedW, pushedH, pushedDpi;
+    private int pushedW, pushedH, pushedDpi, effectiveDpi;
     private boolean pushedKeep;
     private Boolean pushedKeyboard;   // keyboard on the display (true) or on the phone (false)
     private Boolean pushedPhoneOn;    // "Keep the phone's screen on"
+    private Boolean pushedOrientation; // landscape lock (true) or app decides (false)
     private int displayId = -1;
     private volatile ComponentName launched;
     private volatile Problem problem;
     private final Runnable applyContent = this::applyContent;
     // a car Mirror has the display right now; the phone preview stays out of its way
     private static volatile Mirror carShowing;
+    private static volatile Mirror previewShowing;
     private static final CopyOnWriteArrayList<Runnable> carListeners = new CopyOnWriteArrayList<>();
 
     public Mirror(Context context, Listener listener, boolean car) {
@@ -192,6 +194,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
 
     /** A new or changed screen surface (size or dpi), from the main thread. */
     public void surface(Surface s, int w, int h, int d) {
+        if (!car && s != null) previewShowing = this;
         io.post(() -> {
             if (screen != s) {
                 compositor.detach();
@@ -705,13 +708,16 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         }
     }
 
-    /** A setting changed (keyboard, full screen, phone screen, pointer buttons): the car's Mirror applies it now. */
+    /** A setting changed (keyboard, full screen, phone screen, pointer buttons, per-app profile): active Mirrors apply it now. */
     public static void settingsChanged() {
         Mirror m = carShowing;
-        if (m == null) return;
-        if (m.buttonsOn && !Prefs.pointerButtons(m.context)) m.pointerButtons(false);
-        m.io.post(m::applyContent);
-        m.main.post(m.listener::onMirrorChanged); // Android Auto's buttons (Pointer)
+        if (m != null) {
+            if (m.buttonsOn && !Prefs.pointerButtons(m.context)) m.pointerButtons(false);
+            m.io.post(m::applyContent);
+            m.main.post(m.listener::onMirrorChanged); // Android Auto's buttons (Pointer)
+        }
+        Mirror p = previewShowing;
+        if (p != null && p != m) p.io.post(p::applyContent);
     }
 
     /** The app's Back (the car's Back button, the preview's rail). */
@@ -727,6 +733,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     public void release() {
         Shell.removeListener(this);
         if (carShowing == this) setCarShowing(null);
+        if (previewShowing == this) previewShowing = null;
         io.post(() -> {
             touch.cancel();
             IDisplayService s = pushedTo;
@@ -748,6 +755,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     /** Stops the worker without touching the display (a preview that never used it). */
     public void releaseQuietly() {
         Shell.removeListener(this);
+        if (previewShowing == this) previewShowing = null;
         compositor.release();
         thread.quitSafely();
     }
@@ -811,6 +819,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
 
     /** The navigation bar may come or go: lay out again, or just sync before the first surface. */
     private void relayout() {
+        io.removeCallbacks(applyContent);
         if (screenW > 0 && screenH > 0) applyContent();
         else sync();
     }
@@ -829,11 +838,12 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         else if (!visible.isEmpty() && full.contains(visible)) r = visible;
         else r = full;
         if (r.isEmpty()) return;
+        boolean fullCar = car && r.width() >= screenW * 0.8f;
         Rect bar = new Rect();
         int skip = 0;
         boolean right = Prefs.navRight(context);
         // full-width view only; with no app open there is nothing to cover, so the bar stays
-        if (car && (Prefs.navBar(context) || app == null) && r.width() >= screenW * 0.8f) {
+        if (fullCar && (Prefs.navBar(context) || app == null)) {
             int bw = Compositor.navWidth(screenW, dpi);
             if (right) {
                 // Android Auto's own button floats at the top right: the buttons start below it,
@@ -847,6 +857,17 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
                 r = new Rect(r.left + bw, r.top, r.right, r.bottom);
             }
         }
+        if (fullCar && app != null) {
+            int insetDp = Prefs.appInsetDp(context, app);
+            if (insetDp > 0) {
+                int insetPx = Math.round(insetDp * dpi / 160f);
+                if (r.width() > 2 * insetPx + 100 && r.height() > 2 * insetPx + 100) {
+                    Rect copy = new Rect(r);
+                    copy.inset(insetPx, insetPx);
+                    r = copy;
+                }
+            }
+        }
         if (!bar.equals(navBar) || skip != navSkip || right != navRight) {
             navBar.set(bar);
             navSkip = skip;
@@ -854,12 +875,14 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             Log.i(TAG, "navigation bar " + (bar.isEmpty() ? "hidden" : bar.toShortString()
                     + (right ? " (right, buttons from +" + skip + ")" : " (left)")));
         }
-        compositor.nav(navBar, navSkip, navRight, launched != null);
-        if (!r.equals(content)) {
+        compositor.nav(navBar, navSkip, navRight, launched != null, dpi);
+        int targetDpi = app != null ? Prefs.appDpi(context, app, dpi) : dpi;
+        if (!r.equals(content) || targetDpi != effectiveDpi) {
             content.set(r);
-            Log.i(TAG, "content " + content.toShortString() + " of " + screenW + "x" + screenH);
-            compositor.content(content, dpi);
-            touch.area(content.width(), content.height(), dpi, null);
+            effectiveDpi = targetDpi;
+            Log.i(TAG, "content " + content.toShortString() + " of " + screenW + "x" + screenH + "@" + targetDpi);
+            compositor.content(content, targetDpi);
+            touch.area(content.width(), content.height(), targetDpi, null);
         }
         if (px >= 0) showPointer(pointerShown); // still inside the app and the bar
         sync();
@@ -909,6 +932,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         if (s == null) {
             pushedTo = null;
             displayId = -1;
+            pushedOrientation = null;
             setProblem(shellProblem(Shell.state()));
             return;
         }
@@ -919,6 +943,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             pushedKeep = false;
             pushedKeyboard = null;
             pushedPhoneOn = null;
+            pushedOrientation = null;
             displayId = -1;
             launched = null;
         }
@@ -929,13 +954,15 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             }
             boolean on = screen != null;
             int w = content.width(), h = content.height();
-            if (displayId < 0 || on != pushedOn || w != pushedW || h != pushedH || dpi != pushedDpi) {
+            int targetDpi = app != null ? Prefs.appDpi(context, app, dpi) : dpi;
+            if (displayId < 0 || on != pushedOn || w != pushedW || h != pushedH || targetDpi != pushedDpi) {
+                boolean wasNewDisplay = displayId < 0;
                 // without a screen the display gets no surface: it pauses instead of drawing for nobody
-                displayId = s.show(on ? compositor.input() : null, w, h, dpi);
+                displayId = s.show(on ? compositor.input() : null, w, h, targetDpi);
                 pushedOn = on;
                 pushedW = w;
                 pushedH = h;
-                pushedDpi = dpi;
+                pushedDpi = targetDpi;
                 if (displayId < 0) {
                     setProblem(Shell.rootOnOldAndroid()
                             ? new Problem("Shizuku runs as root",
@@ -943,6 +970,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
                             : new Problem("Can't make the car display", s.lastError()));
                     return;
                 }
+                if (wasNewDisplay) pushedOrientation = null;
                 pushedKeyboard = null; // a new display, or a new size: say it again
                 Log.i(TAG, s.info());
                 // for the phone's Home screen: does this phone's screen go dark in the car?
@@ -959,6 +987,11 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             if (!phoneOn.equals(pushedPhoneOn)) {
                 s.phoneScreenOn(phoneOn);
                 pushedPhoneOn = phoneOn;
+            }
+            boolean orientLock = app == null || Prefs.appOrientationLock(context, app);
+            if (!Boolean.valueOf(orientLock).equals(pushedOrientation)) {
+                s.setOrientationLock(orientLock);
+                pushedOrientation = orientLock;
             }
             boolean keep = screen != null || hold;
             if (car && pushedKeep != keep) {
@@ -978,9 +1011,9 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
                 }
                 launched = app;
                 Log.i(TAG, "opened " + app.flattenToShortString() + " on display " + displayId);
-                compositor.nav(navBar, navSkip, navRight, true);
+                compositor.nav(navBar, navSkip, navRight, true, dpi);
             }
-            if (launched == null) compositor.nav(navBar, navSkip, navRight, false);
+            if (launched == null) compositor.nav(navBar, navSkip, navRight, false, dpi);
             setProblem(null);
         } catch (DeadObjectException e) {
             lost(s);
@@ -1029,6 +1062,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         Log.w(TAG, "display service died");
         pushedTo = null;
         displayId = -1;
+        pushedOrientation = null;
         Shell.lost(s);
         setProblem(shellProblem(Shell.state()));
     }

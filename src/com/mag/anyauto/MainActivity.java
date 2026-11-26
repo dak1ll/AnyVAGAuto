@@ -3,13 +3,17 @@ package com.mag.anyauto;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Insets;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,10 +23,14 @@ import android.view.WindowInsets;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -525,14 +533,31 @@ public final class MainActivity extends Activity implements Shell.Listener {
                 row.setPadding(dp(16), dp(8), dp(8), dp(8));
                 r.icon = new ImageView(MainActivity.this);
                 row.addView(r.icon, new LinearLayout.LayoutParams(dp(40), dp(40)));
+                LinearLayout textCol = new LinearLayout(MainActivity.this);
+                textCol.setOrientation(LinearLayout.VERTICAL);
+                textCol.setPadding(dp(16), 0, dp(8), 0);
                 r.label = Ui.text(MainActivity.this, "", 16, false, Ui.text(MainActivity.this));
-                r.label.setPadding(dp(16), 0, dp(8), 0);
-                row.addView(r.label, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                textCol.addView(r.label);
+                r.summary = Ui.text(MainActivity.this, "", 12, false, Ui.text2(MainActivity.this));
+                r.summary.setPadding(0, dp(2), 0, 0);
+                textCol.addView(r.summary);
+                row.addView(textCol, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                 // the whole row is the target; the button only names it
                 r.tryIt = Ui.textButton(MainActivity.this, "Try");
+                r.tryIt.setMinWidth(dp(64));
+                r.tryIt.setMinimumWidth(dp(64));
                 r.tryIt.setClickable(false);
                 r.tryIt.setFocusable(false);
                 row.addView(r.tryIt);
+                r.settings = new ImageButton(MainActivity.this);
+                r.settings.setFocusable(false);
+                r.settings.setFocusableInTouchMode(false);
+                r.settings.setContentDescription("App profile");
+                r.settings.setScaleType(ImageView.ScaleType.CENTER);
+                r.settings.setBackground(new RippleDrawable(
+                        ColorStateList.valueOf(Ui.accent(MainActivity.this) & 0x33FFFFFF),
+                        null, Ui.round(0xFFFFFFFF, dp(24))));
+                row.addView(r.settings, new LinearLayout.LayoutParams(dp(48), dp(48)));
                 row.setTag(r);
                 v = row;
             } else {
@@ -541,15 +566,139 @@ public final class MainActivity extends Activity implements Shell.Listener {
             Apps.App a = chosen.get(i);
             r.icon.setImageDrawable(a.icon(getPackageManager()));
             r.label.setText(a.label);
+            String summary = profileSummary(a.component);
+            if (summary == null) {
+                r.summary.setVisibility(View.GONE);
+                r.settings.setImageDrawable(Ui.icon(MainActivity.this, R.drawable.ic_tune, Ui.text2(MainActivity.this)));
+            } else {
+                r.summary.setText(summary);
+                r.summary.setVisibility(View.VISIBLE);
+                r.settings.setImageDrawable(Ui.icon(MainActivity.this, R.drawable.ic_tune, Ui.accent(MainActivity.this)));
+            }
+            r.settings.setOnClickListener(btn -> showAppProfileDialog(a));
             r.tryIt.setAlpha(Mirror.carShowing() ? 0.38f : 1f);
             return v;
         }
     }
 
+    private String profileSummary(ComponentName cn) {
+        int dpi = Prefs.appDpi(this, cn, 0);
+        boolean lock = Prefs.appOrientationLock(this, cn);
+        int inset = Prefs.appInsetDp(this, cn);
+        if (dpi == 0 && lock && inset == 0) return null;
+        List<String> parts = new ArrayList<>(3);
+        if (dpi > 0) parts.add(dpi + " dpi");
+        if (!lock) parts.add("Follow app");
+        if (inset > 0) parts.add(inset + " dp");
+        return TextUtils.join(" · ", parts);
+    }
+
+    private void showAppProfileDialog(Apps.App a) {
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(dp(20), dp(8), dp(20), dp(4));
+
+        int curDpi = Prefs.appDpi(this, a.component, 0);
+        int[] dpiVals = {0, 120, 160, 200, 240, 320};
+        String[] dpiLabels = {"Auto (car screen)", "120 dpi", "160 dpi", "200 dpi", "240 dpi", "320 dpi"};
+        if (curDpi > 0 && !containsInt(dpiVals, curDpi)) {
+            dpiVals = appendInt(dpiVals, curDpi);
+            dpiLabels = appendString(dpiLabels, curDpi + " dpi");
+        }
+        RadioGroup dpiGroup = addRadioSection(body, "Display DPI", dpiLabels, dpiVals, curDpi, false);
+
+        boolean curLock = Prefs.appOrientationLock(this, a.component);
+        RadioGroup orientGroup = addRadioSection(body, "Orientation",
+                new String[]{"Lock landscape", "Follow app"},
+                new int[]{1, 0}, curLock ? 1 : 0, true);
+
+        int curInset = Prefs.appInsetDp(this, a.component);
+        int[] insetVals = {0, 16, 32};
+        String[] insetLabels = {"0 dp (none)", "16 dp", "32 dp"};
+        if (curInset > 0 && !containsInt(insetVals, curInset)) {
+            insetVals = appendInt(insetVals, curInset);
+            insetLabels = appendString(insetLabels, curInset + " dp");
+        }
+        RadioGroup insetGroup = addRadioSection(body, "Safe edge inset", insetLabels, insetVals, curInset, true);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(body);
+        new AlertDialog.Builder(this)
+                .setTitle(a.label)
+                .setView(scroll)
+                .setPositiveButton("Save", (d, w) -> {
+                    Prefs.setAppDpi(this, a.component, selectedTag(dpiGroup, curDpi));
+                    Prefs.setAppOrientationLock(this, a.component, selectedTag(orientGroup, curLock ? 1 : 0) == 1);
+                    Prefs.setAppInsetDp(this, a.component, selectedTag(insetGroup, curInset));
+                    adapter.notifyDataSetChanged();
+                    Mirror.settingsChanged();
+                })
+                .setNeutralButton("Reset", (d, w) -> {
+                    Prefs.setAppDpi(this, a.component, 0);
+                    Prefs.setAppOrientationLock(this, a.component, true);
+                    Prefs.setAppInsetDp(this, a.component, 0);
+                    adapter.notifyDataSetChanged();
+                    Mirror.settingsChanged();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private RadioGroup addRadioSection(LinearLayout parent, String title, String[] labels,
+            int[] values, int current, boolean topSpace) {
+        TextView header = Ui.text(this, title, 14, true, Ui.accent(this));
+        header.setPadding(0, dp(topSpace ? 14 : 4), 0, dp(4));
+        parent.addView(header);
+        RadioGroup group = new RadioGroup(this);
+        ColorStateList tint = ColorStateList.valueOf(Ui.accent(this));
+        int textColor = Ui.text(this);
+        int checkedId = -1;
+        for (int i = 0; i < labels.length; i++) {
+            RadioButton rb = new RadioButton(this);
+            rb.setId(View.generateViewId());
+            rb.setText(labels[i]);
+            rb.setTextColor(textColor);
+            rb.setTextSize(15);
+            rb.setButtonTintList(tint);
+            rb.setMinimumHeight(dp(40));
+            rb.setTag(values[i]);
+            group.addView(rb);
+            if (values[i] == current) checkedId = rb.getId();
+        }
+        if (checkedId != -1) group.check(checkedId);
+        parent.addView(group);
+        return group;
+    }
+
+    private static int selectedTag(RadioGroup group, int fallback) {
+        int id = group.getCheckedRadioButtonId();
+        if (id == -1) return fallback;
+        View v = group.findViewById(id);
+        return v != null && v.getTag() instanceof Integer ? (Integer) v.getTag() : fallback;
+    }
+
+    private static boolean containsInt(int[] a, int target) {
+        for (int v : a) if (v == target) return true;
+        return false;
+    }
+
+    private static int[] appendInt(int[] a, int v) {
+        int[] out = java.util.Arrays.copyOf(a, a.length + 1);
+        out[a.length] = v;
+        return out;
+    }
+
+    private static String[] appendString(String[] a, String v) {
+        String[] out = java.util.Arrays.copyOf(a, a.length + 1);
+        out[a.length] = v;
+        return out;
+    }
+
     private static final class Row {
         ImageView icon;
-        TextView label;
+        TextView label, summary;
         Button tryIt;
+        ImageButton settings;
     }
 
     private int dp(float v) {

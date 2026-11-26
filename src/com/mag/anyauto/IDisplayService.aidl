@@ -69,4 +69,7 @@ interface IDisplayService {
     // AnyAuto, its screen dark unless a setting keeps it on), 0 = its own (the phone is left
     // alone), -1 = no display yet.
     int phoneGroup() = 15;
+
+    // Whether the virtual display locks to landscape (true, default) or lets the app decide (false).
+    oneway void setOrientationLock(boolean lock) = 16;
 }

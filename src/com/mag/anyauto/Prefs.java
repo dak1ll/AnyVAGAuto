@@ -27,6 +27,9 @@ public final class Prefs {
     private static final String CAR_KNOB = "car_knob";
     private static final String POINTER_TOLD = "pointer_told";
     private static final String POINTER_BUTTONS = "pointer_buttons";
+    static final int MIN_APP_DPI = 100;
+    static final int MAX_APP_DPI = 640;
+    static final int MAX_INSET_DP = 64;
 
     private Prefs() {
     }
@@ -232,5 +235,62 @@ public final class Prefs {
 
     static void setUpdateVersion(Context c, String v) {
         p(c).edit().putString(UPDATE_VERSION, v).apply();
+    }
+
+    static String profileKey(String field, String shortComponent) {
+        return "profile_" + field + "_" + shortComponent;
+    }
+
+    static String profileKey(String field, ComponentName cn) {
+        return profileKey(field, cn.flattenToShortString());
+    }
+
+    static int resolveAppDpi(int stored, int fallback) {
+        return stored >= MIN_APP_DPI && stored <= MAX_APP_DPI ? stored : fallback;
+    }
+
+    static int clampInsetDp(int dp) {
+        return Math.max(0, Math.min(MAX_INSET_DP, dp));
+    }
+
+    /** Per-app virtual display DPI (100..640), or {@code fallbackDpi} when set to auto. */
+    public static int appDpi(Context c, ComponentName app, int fallbackDpi) {
+        if (c == null || app == null) return fallbackDpi;
+        return resolveAppDpi(p(c).getInt(profileKey("dpi", app), 0), fallbackDpi);
+    }
+
+    /** Sets per-app virtual display DPI (100..640), or clears to auto when {@code 0} or out of range. */
+    public static void setAppDpi(Context c, ComponentName app, int dpi) {
+        if (c == null || app == null) return;
+        String key = profileKey("dpi", app);
+        if (dpi < MIN_APP_DPI || dpi > MAX_APP_DPI) p(c).edit().remove(key).apply();
+        else p(c).edit().putInt(key, dpi).apply();
+    }
+
+    /** Whether the car display locks to landscape for this app (default true; false lets app decide). */
+    public static boolean appOrientationLock(Context c, ComponentName app) {
+        if (c == null || app == null) return true;
+        return p(c).getBoolean(profileKey("orient_lock", app), true);
+    }
+
+    public static void setAppOrientationLock(Context c, ComponentName app, boolean lock) {
+        if (c == null || app == null) return;
+        String key = profileKey("orient_lock", app);
+        if (lock) p(c).edit().remove(key).apply();
+        else p(c).edit().putBoolean(key, false).apply();
+    }
+
+    /** Per-app safe edge inset in dp (0..64, default 0) for full-width car views. */
+    public static int appInsetDp(Context c, ComponentName app) {
+        if (c == null || app == null) return 0;
+        return clampInsetDp(p(c).getInt(profileKey("inset", app), 0));
+    }
+
+    public static void setAppInsetDp(Context c, ComponentName app, int insetDp) {
+        if (c == null || app == null) return;
+        int clamped = clampInsetDp(insetDp);
+        String key = profileKey("inset", app);
+        if (clamped == 0) p(c).edit().remove(key).apply();
+        else p(c).edit().putInt(key, clamped).apply();
     }
 }

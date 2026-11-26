@@ -86,6 +86,8 @@ public final class DisplayService extends IDisplayService.Stub {
     private boolean keyboardHere = true;
     // the setting "Keep the phone's screen on"
     private boolean keepPhoneOn;
+    // whether the virtual display locks to landscape (true) or lets the app decide (false)
+    private boolean orientationLock = true;
     // the car shows AnyAuto (keepRunning)
     private boolean carOn;
     // the display has a display group of its own, so it keeps running while the phone sleeps
@@ -130,7 +132,7 @@ public final class DisplayService extends IDisplayService.Stub {
                 display = create(w, h, d, s);
                 displayId = display.getDisplay().getDisplayId();
                 Log.i(TAG, "display " + displayId + " " + w + "x" + h + "@" + d + " flags 0x" + Integer.toHexString(flags));
-                keepLandscape();
+                applyOrientation(orientationLock);
                 applyKeyboard();
                 ownGroup = ownGroup(displayId);
                 Log.i(TAG, "display " + displayId + (ownGroup
@@ -212,6 +214,12 @@ public final class DisplayService extends IDisplayService.Stub {
         applyPhoneMode();
     }
 
+    @Override
+    public synchronized void setOrientationLock(boolean lock) {
+        orientationLock = lock;
+        if (display != null) applyOrientation(lock);
+    }
+
     /**
      * Where the display's keyboard opens (IME policy, like scrcpy's {@code --display-ime-policy}):
      * LOCAL puts it on the display itself; FALLBACK_DISPLAY (Android's default for a virtual
@@ -231,17 +239,15 @@ public final class DisplayService extends IDisplayService.Stub {
     }
 
     /**
-     * The display never turns for an app. A virtual display follows an app's requested
-     * orientation like a phone: on Android 14 a portrait-only app turned it to portrait (rotation
-     * 270, 392x696), and the car's landscape surface then showed the whole display shrunk into a
-     * narrow column, with the car's taps landing in the wrong places. Android 17 letterboxes such
-     * apps by itself. Here every Android gets that: the app stays upright at full height in a
-     * column in the middle. Rotation 0 is the display's own shape, so a portrait-shaped dashboard
-     * card stays portrait. Any one of the three settings was enough on Android 14; each is best
+     * Controls whether the virtual display locks to landscape (rotation 0) or follows an app's
+     * requested orientation. A virtual display follows an app's requested orientation like a phone:
+     * on Android 14 a portrait-only app turns it to portrait, whereas locking keeps rotation 0 and
+     * lets the system letterbox portrait apps inside the car's landscape surface. Each call is best
      * effort (all need SET_ORIENTATION, which the shell user has).
      */
-    private void keepLandscape() {
+    private void applyOrientation(boolean lock) {
         int id = displayId;
+        if (display == null || id < 0) return;
         Object wm;
         try {
             wm = windowManager();
@@ -256,23 +262,36 @@ public final class DisplayService extends IDisplayService.Stub {
                 switch (m.getName()) {
                     case "setIgnoreOrientationRequest": // Android 12+: (displayId, ignore)
                         if (p.length == 2 && p[0] == int.class && p[1] == boolean.class) {
-                            m.invoke(wm, id, true);
-                            done.append(" ignore-requests");
+                            m.invoke(wm, id, lock);
+                            done.append(lock ? " ignore-requests" : " allow-requests");
                         }
                         break;
-                    case "setFixedToUserRotation": // Android 10+: (displayId, FIXED_TO_USER_ROTATION_ENABLED = 2)
+                    case "setFixedToUserRotation": // Android 10+: (displayId, ENABLED=2 / DEFAULT=0)
                         if (p.length == 2 && p[0] == int.class && p[1] == int.class) {
-                            m.invoke(wm, id, 2);
-                            done.append(" fixed-to-user");
+                            m.invoke(wm, id, lock ? 2 : 0);
+                            done.append(lock ? " fixed-to-user" : " user-rotation-default");
                         }
                         break;
                     case "freezeDisplayRotation": // (displayId, rotation), (displayId, rotation, caller) on 14+
-                        if (p.length == 2 && p[0] == int.class && p[1] == int.class) {
-                            m.invoke(wm, id, 0);
-                            done.append(" rotation-0");
-                        } else if (p.length == 3 && p[0] == int.class && p[1] == int.class && p[2] == String.class) {
-                            m.invoke(wm, id, 0, "AnyAuto");
-                            done.append(" rotation-0");
+                        if (lock) {
+                            if (p.length == 2 && p[0] == int.class && p[1] == int.class) {
+                                m.invoke(wm, id, 0);
+                                done.append(" rotation-0");
+                            } else if (p.length == 3 && p[0] == int.class && p[1] == int.class && p[2] == String.class) {
+                                m.invoke(wm, id, 0, "AnyAuto");
+                                done.append(" rotation-0");
+                            }
+                        }
+                        break;
+                    case "thawDisplayRotation": // (displayId), (displayId, caller) on 14+
+                        if (!lock) {
+                            if (p.length == 1 && p[0] == int.class) {
+                                m.invoke(wm, id);
+                                done.append(" thaw");
+                            } else if (p.length == 2 && p[0] == int.class && p[1] == String.class) {
+                                m.invoke(wm, id, "AnyAuto");
+                                done.append(" thaw");
+                            }
                         }
                         break;
                 }
@@ -280,7 +299,8 @@ public final class DisplayService extends IDisplayService.Stub {
                 Log.w(TAG, "orientation: " + m.getName() + ": " + describe(t));
             }
         }
-        Log.i(TAG, "display " + id + " stays as it is:" + (done.length() == 0 ? " nothing applied" : done));
+        Log.i(TAG, "display " + id + (lock ? " stays as it is:" : " follows app orientation:")
+                + (done.length() == 0 ? " nothing applied" : done));
     }
 
     private void applyKeyboard() {
