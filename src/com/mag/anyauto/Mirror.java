@@ -244,6 +244,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
      * have let go of it, because the host may destroy it as soon as this returns.
      */
     public void surfaceGone() {
+        if (!car && previewShowing == this) previewShowing = null;
         touch.cancel();
         CountDownLatch done = new CountDownLatch(1);
         io.post(() -> {
@@ -715,9 +716,10 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             if (m.buttonsOn && !Prefs.pointerButtons(m.context)) m.pointerButtons(false);
             m.io.post(m::applyContent);
             m.main.post(m.listener::onMirrorChanged); // Android Auto's buttons (Pointer)
+        } else {
+            Mirror p = previewShowing;
+            if (p != null) p.io.post(p::applyContent);
         }
-        Mirror p = previewShowing;
-        if (p != null && p != m) p.io.post(p::applyContent);
     }
 
     /** The app's Back (the car's Back button, the preview's rail). */
