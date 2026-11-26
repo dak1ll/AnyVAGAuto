@@ -28,6 +28,7 @@ public final class Prefs {
     private static final String POINTER_TOLD = "pointer_told";
     private static final String POINTER_BUTTONS = "pointer_buttons";
     private static final String WAKE_FOR_VOICE = "wake_for_voice";
+    private static final String SPLIT_MODE = "split_mode";
     static final int MIN_APP_DPI = 100;
     static final int MAX_APP_DPI = 640;
     static final int MAX_INSET_DP = 64;
@@ -201,6 +202,15 @@ public final class Prefs {
 
     public static void setWakeForVoice(Context c, boolean on) {
         p(c).edit().putBoolean(WAKE_FOR_VOICE, on).apply();
+    }
+
+    /** Experimental 2-pane Freeform split on Android 11+ (default off). */
+    public static boolean splitMode(Context c) {
+        return p(c).getBoolean(SPLIT_MODE, false);
+    }
+
+    public static void setSplitMode(Context c, boolean on) {
+        p(c).edit().putBoolean(SPLIT_MODE, on).apply();
     }
 
     /** The app also uses the band Android Auto keeps for Apps and Back (default on). */

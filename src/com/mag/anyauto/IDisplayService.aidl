@@ -3,6 +3,7 @@
 package com.mag.anyauto;
 
 import android.content.ComponentName;
+import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.Surface;
 
@@ -76,4 +77,8 @@ interface IDisplayService {
     // Temporarily wakes the phone's screen for voice dictation while the car keyboard is open,
     // without changing the user's "Keep the phone's screen on" setting.
     oneway void wakeForKeyboard(boolean active) = 17;
+
+    // Starts the app's launcher activity on the display inside the given Freeform bounds (API 30+),
+    // or falls back to standard launch on the display if Freeform bounds are unsupported.
+    String launchInBounds(in ComponentName component, in Rect bounds) = 18;
 }

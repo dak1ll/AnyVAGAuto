@@ -47,7 +47,7 @@ public final class MainActivity extends Activity implements Shell.Listener {
     static final String UNKNOWNAUTO = "com.mag.unknownauto";
     static final String UNKNOWNAUTO_RELEASES = "https://github.com/dak1ll/VAGAuto/releases/latest";
     private static final int MENU_HELP = 1, MENU_INSTALL = 2, MENU_KEYBOARD = 3, MENU_FULL = 4, MENU_PHONE_ON = 5,
-            MENU_AUTO_UPDATE = 6, MENU_CHECK_UPDATE = 7, MENU_NAV_SIDE = 8, MENU_POINTER = 9;
+            MENU_AUTO_UPDATE = 6, MENU_CHECK_UPDATE = 7, MENU_NAV_SIDE = 8, MENU_POINTER = 9, MENU_SPLIT = 10;
 
     private LinearLayout cards;
     private TextView section, sectionCount;
@@ -159,6 +159,8 @@ public final class MainActivity extends Activity implements Shell.Listener {
         menu.add(0, MENU_NAV_SIDE, 3, "Navigation bar side");
         menu.add(0, MENU_POINTER, 3, "Pointer buttons (knob)").setCheckable(true)
                 .setChecked(Prefs.pointerButtons(this));
+        menu.add(0, MENU_SPLIT, 3, "Split screen (Freeform)").setCheckable(true)
+                .setChecked(Prefs.splitMode(this));
         menu.add(0, MENU_AUTO_UPDATE, 4, "Check for updates automatically").setCheckable(true)
                 .setChecked(Prefs.autoUpdate(this));
         menu.add(0, MENU_CHECK_UPDATE, 5, "Check for updates now");
@@ -197,6 +199,13 @@ public final class MainActivity extends Activity implements Shell.Listener {
                         .setPositiveButton("OK", null)
                         .show();
             }
+            return true;
+        }
+        if (item.getItemId() == MENU_SPLIT) {
+            boolean on = !item.isChecked();
+            item.setChecked(on);
+            Prefs.setSplitMode(this, on);
+            Mirror.settingsChanged();
             return true;
         }
         if (item.getItemId() == MENU_AUTO_UPDATE) {

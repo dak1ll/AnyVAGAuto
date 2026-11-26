@@ -82,12 +82,12 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
     static final int NONE = 0, IDLE = 1, CONNECTING = 2, PROBLEM = 3;
 
     // the navigation bar's buttons, top to bottom
-    static final int NAV_BACK = 0, NAV_APPS = 1, NAV_KEYBOARD = 2, NAV_CLOSE = 3, NAV_HIDE = 4;
-    private static final int[] NAV_ICONS = {R.drawable.ic_back, R.drawable.ic_apps, R.drawable.ic_keyboard,
-            R.drawable.ic_close, R.drawable.ic_chevron_left};
+    static final int NAV_BACK = 0, NAV_APPS = 1, NAV_SWAP = 2, NAV_KEYBOARD = 3, NAV_CLOSE = 4, NAV_HIDE = 5;
+    private static final int[] NAV_ICONS = {R.drawable.ic_back, R.drawable.ic_apps, R.drawable.ic_swap,
+            R.drawable.ic_keyboard, R.drawable.ic_close, R.drawable.ic_chevron_left};
     // Hide points to the screen edge the bar goes to
     private static final int NAV_HIDE_RIGHT = R.drawable.ic_chevron_right;
-    private static final String[] NAV_LABELS = {"Back", "Apps", "Keyboard", "Close", "Hide"};
+    private static final String[] NAV_LABELS = {"Back", "Apps", "Last", "Keyboard", "Close", "Hide"};
     private static final int NAV_BG = 0xFF16171A;
     private static final long NAV_PRESS_MS = 180;
     // the pointer: ring radius and the bitmap's size, dp
@@ -122,7 +122,7 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
     private int program, aPos, aTex, uTexM, texture;
     private int program2, aPos2, aTex2, uTexM2, overlayTex, navTex;
     private final Rect nav = new Rect();
-    private boolean navAppOpen, navReady, navRight;
+    private boolean navAppOpen, navHasPrev, navReady, navRight;
     private int navSkip;
     private int navPressed = -1;
     private final Runnable navRelease = () -> {
@@ -239,19 +239,22 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
     /**
      * The navigation bar goes into this rect of the screen surface (empty: no bar), at the right
      * edge or the left; its buttons start {@code skipTop} px below the rect's top (on the right,
-     * below Android Auto's own button). All buttons but Apps are dimmed while no app is open.
+     * below Android Auto's own button). All buttons but Apps are dimmed while no app is open, and
+     * Swap is dimmed until a previous distinct app exists.
      */
-    void nav(Rect r, int skipTop, boolean right, boolean appOpen, int dpi) {
+    void nav(Rect r, int skipTop, boolean right, boolean appOpen, boolean hasPrev, int dpi) {
         Rect copy = new Rect(r);
         int d = Math.max(1, dpi);
         gl.post(() -> {
-            if (copy.equals(nav) && skipTop == navSkip && right == navRight && appOpen == navAppOpen && d == navDpi) {
+            if (copy.equals(nav) && skipTop == navSkip && right == navRight
+                    && appOpen == navAppOpen && hasPrev == navHasPrev && d == navDpi) {
                 return;
             }
             nav.set(copy);
             navSkip = skipTop;
             navRight = right;
             navAppOpen = appOpen;
+            navHasPrev = hasPrev;
             navDpi = d;
             renderNav();
             draw();
@@ -269,10 +272,16 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
         });
     }
 
+    /** Height of one navigation button slot in pixels for a bar of {@code barHeight} and {@code skipTop}. */
+    static float navSlotHeight(int barHeight, int skipTop, int dpi) {
+        float pad = navPad(dpi);
+        return (barHeight - skipTop - 2 * pad) / NAV_ICONS.length;
+    }
+
     /** The button under y in a bar of this rect, top to bottom, or -1. Same layout as renderNav. */
     static int navButton(Rect bar, int skipTop, int dpi, float y) {
         float pad = navPad(dpi);
-        float slot = (bar.height() - skipTop - 2 * pad) / NAV_ICONS.length;
+        float slot = navSlotHeight(bar.height(), skipTop, dpi);
         if (slot <= 0) return -1;
         int i = (int) Math.floor((y - bar.top - skipTop - pad) / slot);
         return i < 0 || i >= NAV_ICONS.length ? -1 : i;
@@ -286,7 +295,7 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
     /** The middle of button {@code i} in a bar of this rect, as y in the screen surface. */
     static float navCentreY(Rect bar, int skipTop, int dpi, int i) {
         float pad = navPad(dpi);
-        float slot = (bar.height() - skipTop - 2 * pad) / NAV_ICONS.length;
+        float slot = navSlotHeight(bar.height(), skipTop, dpi);
         return bar.top + skipTop + pad + (i + 0.5f) * slot;
     }
 
@@ -507,7 +516,7 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
 
     /**
      * The navigation bar as a bitmap of its rect: a dark column with a hairline on the app's side,
-     * and five equal slots of glyph + label below the skipped top (the label only where a slot is
+     * and six equal slots of glyph + label below the skipped top (the label only where a slot is
      * tall enough). Sizes are px at 160 dpi, scaled by the surface dpi.
      */
     private void renderNav() {
@@ -515,9 +524,9 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
         if (nav.isEmpty()) return;
         int w = nav.width(), h = nav.height();
         float s = navDpi / 160f, pad = navPad(navDpi);
-        float slot = (h - navSkip - 2 * pad) / NAV_ICONS.length;
+        float slot = navSlotHeight(h, navSkip, navDpi);
         if (slot <= 0) return;
-        int glyph = Math.round(Math.min(28 * s, slot * 0.45f));
+        int glyph = Math.max(1, Math.round(Math.min(28 * s, Math.min(slot * 0.85f, Math.max(12 * s, slot * 0.45f)))));
         TextPaint label = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
         label.setTextSize(12 * s);
         label.setTextAlign(android.graphics.Paint.Align.CENTER);
@@ -537,7 +546,7 @@ final class Compositor implements SurfaceTexture.OnFrameAvailableListener {
         Paint press = new Paint(Paint.ANTI_ALIAS_FLAG);
         press.setColor(0x33FFFFFF);
         for (int i = 0; i < NAV_ICONS.length; i++) {
-            boolean on = navAppOpen || i == NAV_APPS;
+            boolean on = i == NAV_APPS || (navAppOpen && (i != NAV_SWAP || navHasPrev));
             int fg = on ? 0xFFFFFFFF : 0x55FFFFFF;
             float top = navSkip + pad + i * slot;
             if (i == navPressed && on) {

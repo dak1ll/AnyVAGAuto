@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.DeadObjectException;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -110,6 +111,60 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     /** Directions of a nudge, for {@link #pointerStep}. */
     public static final int UP = 0, DOWN = 1, LEFT = 2, RIGHT = 3;
 
+    /** Tracks the current and previous distinct opened apps for quick 1-tap switching. */
+    static final class AppHistory<T> {
+        private T current;
+        private T previous;
+
+        synchronized void recordOpen(T app) {
+            if (app == null || Objects.equals(app, current)) return;
+            if (current != null) previous = current;
+            current = app;
+        }
+
+        synchronized T current() {
+            return current;
+        }
+
+        synchronized T previous() {
+            return previous;
+        }
+
+        synchronized boolean canSwap() {
+            return current != null && previous != null && !Objects.equals(current, previous);
+        }
+
+        synchronized T swap() {
+            if (!canSwap()) return null;
+            T next = previous;
+            previous = current;
+            current = next;
+            return next;
+        }
+
+        synchronized void clearCurrent() {
+            current = null;
+        }
+
+        synchronized void reset() {
+            current = null;
+            previous = null;
+        }
+    }
+
+    /** Returns Freeform {left, top, right, bottom} bounds for 60% primary / 40% secondary split. */
+    static int[] splitZoneBounds(int width, int height, boolean secondary) {
+        if (width <= 0 || height <= 0) {
+            return new int[]{0, 0, Math.max(0, width), Math.max(0, height)};
+        }
+        int splitX = Math.round(width * 0.60f);
+        return secondary ? new int[]{splitX, 0, width, height} : new int[]{0, 0, splitX, height};
+    }
+
+    private static Rect toRect(int[] bounds) {
+        return new Rect(bounds[0], bounds[1], bounds[2], bounds[3]);
+    }
+
     /** What keeps the app off the screen: a short title and one sentence with the fix. */
     public static final class Problem {
         public final String title, text;
@@ -167,6 +222,8 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     private float pushX, pushY;       // a touchpad finger's distance past the edge
     private boolean hold;             // the car shows AnyAuto's apps grid
     private ComponentName app;        // what should be on the display
+    private final AppHistory<ComponentName> history = new AppHistory<>();
+    private ComponentName splitPrimary;
     private IDisplayService pushedTo; // the service the state below belongs to
     private boolean pushedOn;
     private int pushedW, pushedH, pushedDpi, effectiveDpi;
@@ -283,11 +340,34 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     /** Shows this app on the display (starting it there, or moving its task there). */
     public void open(ComponentName c) {
         io.post(() -> {
+            history.recordOpen(c);
             setTempKeyboardWake(false);
             app = c;
             launched = null;
             relayout(); // a hidden navigation bar goes once an app is open
         });
+    }
+
+    /** Switches back to the previously opened distinct app on the display. */
+    public void switchLastApp() {
+        io.post(() -> {
+            ComponentName next = history.swap();
+            if (next == null) {
+                say("No previous app yet", false);
+                return;
+            }
+            app = next;
+            launched = null;
+            if (car) Prefs.setLast(context, next);
+            setTempKeyboardWake(false);
+            relayout();
+            main.post(listener::onMirrorChanged);
+        });
+    }
+
+    /** Alias for {@link #switchLastApp()}. */
+    public void openPrev() {
+        switchLastApp();
     }
 
     /** The car screen's handler for the navigation bar's Apps button and messages. */
@@ -589,6 +669,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         if (button < 0) return;
         boolean open = launched != null;
         if (!open && button != Compositor.NAV_APPS) return;
+        if (button == Compositor.NAV_SWAP && !history.canSwap()) return;
         compositor.navPressed(button);
         // like a finger on the app: wakes the phone again if the user had put it to sleep
         if (car && pushedKeep) call(s -> s.keepRunning(true));
@@ -602,6 +683,9 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
                     Nav n = nav;
                     if (n != null) n.apps();
                 });
+                break;
+            case Compositor.NAV_SWAP:
+                switchLastApp();
                 break;
             case Compositor.NAV_KEYBOARD:
                 toggleKeyboard(r -> say(keyboardMessage(r), false));
@@ -635,6 +719,8 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             }
             app = null;
             launched = null;
+            splitPrimary = null;
+            history.clearCurrent();
             Prefs.clearLast(context);
             relayout();
             main.post(listener::onMirrorChanged);
@@ -771,6 +857,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         if (previewShowing == this) previewShowing = null;
         io.post(() -> {
             setTempKeyboardWake(false);
+            splitPrimary = null;
             touch.cancel();
             IDisplayService s = pushedTo;
             if (s != null) {
@@ -913,7 +1000,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             Log.i(TAG, "navigation bar " + (bar.isEmpty() ? "hidden" : bar.toShortString()
                     + (right ? " (right, buttons from +" + skip + ")" : " (left)")));
         }
-        compositor.nav(navBar, navSkip, navRight, launched != null, dpi);
+        compositor.nav(navBar, navSkip, navRight, launched != null, history.canSwap(), dpi);
         int targetDpi = app != null ? Prefs.appDpi(context, app, dpi) : dpi;
         if (!r.equals(content) || targetDpi != effectiveDpi) {
             content.set(r);
@@ -1046,17 +1133,31 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
                 if (keep) io.postDelayed(checkFights, FIGHT_CHECK_MS);
                 if (keep) tellDark(s);
             }
+            boolean split = car && Build.VERSION.SDK_INT >= 30 && Prefs.splitMode(context);
+            if (!split) splitPrimary = null;
             if (app != null && !app.equals(launched)) {
-                String r = s.launch(app);
+                String r;
+                if (!split) {
+                    r = s.launch(app);
+                } else if (splitPrimary == null || splitPrimary.equals(app)) {
+                    splitPrimary = app;
+                    r = s.launch(app);
+                } else {
+                    String rPrimary = s.launchInBounds(splitPrimary, toRect(splitZoneBounds(w, h, false)));
+                    if (!"ok".equals(rPrimary)) {
+                        Log.w(TAG, "split primary launch " + splitPrimary.flattenToShortString() + ": " + rPrimary);
+                    }
+                    r = s.launchInBounds(app, toRect(splitZoneBounds(w, h, true)));
+                }
                 if (!"ok".equals(r)) {
                     setProblem(new Problem("Can't open " + label(app), r + ". Try again from Apps."));
                     return;
                 }
                 launched = app;
                 Log.i(TAG, "opened " + app.flattenToShortString() + " on display " + displayId);
-                compositor.nav(navBar, navSkip, navRight, true, dpi);
+                compositor.nav(navBar, navSkip, navRight, true, history.canSwap(), dpi);
             }
-            if (launched == null) compositor.nav(navBar, navSkip, navRight, false, dpi);
+            if (launched == null) compositor.nav(navBar, navSkip, navRight, false, history.canSwap(), dpi);
             setProblem(null);
         } catch (DeadObjectException e) {
             lost(s);

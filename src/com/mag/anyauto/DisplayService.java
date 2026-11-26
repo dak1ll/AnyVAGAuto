@@ -565,13 +565,32 @@ public final class DisplayService extends IDisplayService.Stub {
 
     @Override
     public synchronized String launch(ComponentName component) {
+        return launchInternal(component, null);
+    }
+
+    @Override
+    public synchronized String launchInBounds(ComponentName component, Rect bounds) {
+        return launchInternal(component, bounds);
+    }
+
+    private String launchInternal(ComponentName component, Rect bounds) {
         if (display == null) return "no display";
         Intent intent = new Intent(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LAUNCHER)
                 .setComponent(component)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         // an existing task of the app moves to the launch display (checked on Android 17)
-        Bundle options = ActivityOptions.makeBasic().setLaunchDisplayId(displayId).toBundle();
+        ActivityOptions opts = ActivityOptions.makeBasic().setLaunchDisplayId(displayId);
+        if (bounds != null && !bounds.isEmpty() && Build.VERSION.SDK_INT >= 30) {
+            try {
+                // WINDOWING_MODE_FREEFORM = 5
+                ActivityOptions.class.getMethod("setLaunchWindowingMode", int.class).invoke(opts, 5);
+                opts.setLaunchBounds(bounds);
+            } catch (Throwable t) {
+                Log.w(TAG, "freeform bounds unsupported: " + describe(t));
+            }
+        }
+        Bundle options = opts.toBundle();
         try {
             Object atm = Build.VERSION.SDK_INT >= 29
                     ? Class.forName("android.app.ActivityTaskManager").getMethod("getService").invoke(null)
