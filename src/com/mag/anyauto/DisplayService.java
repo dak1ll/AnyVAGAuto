@@ -86,6 +86,8 @@ public final class DisplayService extends IDisplayService.Stub {
     private boolean keyboardHere = true;
     // the setting "Keep the phone's screen on"
     private boolean keepPhoneOn;
+    // temporarily keep the phone's screen on while the car keyboard is open for voice input
+    private boolean tempPhoneOn;
     // whether the virtual display locks to landscape (true) or lets the app decide (false)
     private boolean orientationLock = true;
     // the car shows AnyAuto (keepRunning)
@@ -211,6 +213,13 @@ public final class DisplayService extends IDisplayService.Stub {
     public synchronized void phoneScreenOn(boolean on) {
         if (keepPhoneOn == on) return;
         keepPhoneOn = on;
+        applyPhoneMode();
+    }
+
+    @Override
+    public synchronized void wakeForKeyboard(boolean active) {
+        if (tempPhoneOn == active) return;
+        tempPhoneOn = active;
         applyPhoneMode();
     }
 
@@ -478,6 +487,7 @@ public final class DisplayService extends IDisplayService.Stub {
     @Override
     public synchronized void keepRunning(boolean on) {
         carOn = on;
+        if (!on) tempPhoneOn = false;
         applyPhoneMode();
     }
 
@@ -489,21 +499,23 @@ public final class DisplayService extends IDisplayService.Stub {
      *     alone keeps that one awake;</li>
      * <li>it shares the phone's group (Android 17 builds with desktop mode): the phone must stay
      *     awake, so {@link PhonePower} keeps it awake with its screen dark;</li>
-     * <li>"Keep the phone's screen on", or the keyboard on the phone: the phone stays awake with
-     *     its screen on, in both cases.</li>
+     * <li>"Keep the phone's screen on", the keyboard on the phone, or temporary voice-input
+     *     wake: the phone stays awake with its screen on, in both cases.</li>
      * </ul>
      */
     private synchronized void applyPhoneMode() {
         try {
-            boolean lit = keepPhoneOn || !keyboardHere;
+            boolean userLit = keepPhoneOn || !keyboardHere;
+            boolean lit = userLit || tempPhoneOn;
             if (ownGroup && !lit) {
                 if (phone != null) phone.releaseNow();
             } else {
                 if (phone == null) {
                     if (!carOn) return;
-                    phone = new PhonePower(context, dm(), !lit);
+                    phone = new PhonePower(context, dm(), !userLit);
                 }
-                phone.setDark(!lit);
+                phone.setDark(!userLit);
+                phone.setTempWake(tempPhoneOn);
                 phone.keep(carOn);
             }
             carLock(carOn && ownGroup);
@@ -686,6 +698,7 @@ public final class DisplayService extends IDisplayService.Stub {
 
     @Override
     public synchronized void close() {
+        tempPhoneOn = false;
         if (phone != null) phone.releaseNow();
         if (carLock != null && carLock.isHeld()) carLock.release();
         if (display != null) {

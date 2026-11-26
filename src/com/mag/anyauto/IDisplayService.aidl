@@ -72,4 +72,8 @@ interface IDisplayService {
 
     // Whether the virtual display locks to landscape (true, default) or lets the app decide (false).
     oneway void setOrientationLock(boolean lock) = 16;
+
+    // Temporarily wakes the phone's screen for voice dictation while the car keyboard is open,
+    // without changing the user's "Keep the phone's screen on" setting.
+    oneway void wakeForKeyboard(boolean active) = 17;
 }

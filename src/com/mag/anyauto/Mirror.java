@@ -66,6 +66,8 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     private static final long CONTENT_SETTLE_MS = 150;
     // while the car shows AnyAuto: how often to ask whether the phone refused to stay dark
     private static final long FIGHT_CHECK_MS = 10_000;
+    // max duration of temporary phone-screen wake after opening the car keyboard for voice input
+    static final long TEMP_WAKE_TIMEOUT_MS = 25_000;
 
     public interface Listener {
         /** Main thread: {@link #problem()} or the navigation bar setting may have changed. */
@@ -172,10 +174,12 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     private Boolean pushedKeyboard;   // keyboard on the display (true) or on the phone (false)
     private Boolean pushedPhoneOn;    // "Keep the phone's screen on"
     private Boolean pushedOrientation; // landscape lock (true) or app decides (false)
+    private boolean tempWakeActive;
     private int displayId = -1;
     private volatile ComponentName launched;
     private volatile Problem problem;
     private final Runnable applyContent = this::applyContent;
+    private final Runnable clearTempWake = () -> setTempKeyboardWake(false);
     // a car Mirror has the display right now; the phone preview stays out of its way
     private static volatile Mirror carShowing;
     private static volatile Mirror previewShowing;
@@ -248,6 +252,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         touch.cancel();
         CountDownLatch done = new CountDownLatch(1);
         io.post(() -> {
+            setTempKeyboardWake(false);
             compositor.detach();
             drop(screen);
             screen = null;
@@ -269,6 +274,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     /** The car shows AnyAuto's apps grid: AnyAuto is still in use, keep the phone dark. */
     public void hold(boolean on) {
         io.post(() -> {
+            if (on) setTempKeyboardWake(false);
             hold = on;
             sync();
         });
@@ -277,6 +283,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     /** Shows this app on the display (starting it there, or moving its task there). */
     public void open(ComponentName c) {
         io.post(() -> {
+            setTempKeyboardWake(false);
             app = c;
             launched = null;
             relayout(); // a hidden navigation bar goes once an app is open
@@ -587,6 +594,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         if (car && pushedKeep) call(s -> s.keepRunning(true));
         switch (button) {
             case Compositor.NAV_BACK:
+                setTempKeyboardWake(false);
                 call(s -> s.key(KeyEvent.KEYCODE_BACK));
                 break;
             case Compositor.NAV_APPS:
@@ -615,6 +623,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
      */
     public void closeApp() {
         io.post(() -> {
+            setTempKeyboardWake(false);
             ComponentName was = launched;
             String[] r = {null};
             call(s -> r[0] = s.closeApp());
@@ -689,8 +698,26 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         io.post(() -> {
             String[] r = {"error: no display"};
             call(s -> r[0] = s.toggleKeyboard());
+            setTempKeyboardWake("shown".equals(r[0]));
             main.post(() -> done.accept(r[0]));
         });
+    }
+
+    /**
+     * Temporarily wakes the phone screen while the car keyboard is open for voice input,
+     * cleared automatically on close, Back, app switch, disconnect, or after {@link #TEMP_WAKE_TIMEOUT_MS}.
+     */
+    private void setTempKeyboardWake(boolean active) {
+        io.removeCallbacks(clearTempWake);
+        boolean want = active && car && Prefs.wakeForVoice(context)
+                && Prefs.keyboardOnCar(context) && !Prefs.keepPhoneOn(context);
+        if (want != tempWakeActive) {
+            tempWakeActive = want;
+            call(s -> s.wakeForKeyboard(want));
+        }
+        if (tempWakeActive) {
+            io.postDelayed(clearTempWake, TEMP_WAKE_TIMEOUT_MS);
+        }
     }
 
     /** A short message for the keyboard button's answer, or null when the screen says enough. */
@@ -714,7 +741,12 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         Mirror m = carShowing;
         if (m != null) {
             if (m.buttonsOn && !Prefs.pointerButtons(m.context)) m.pointerButtons(false);
-            m.io.post(m::applyContent);
+            m.io.post(() -> {
+                if (!Prefs.wakeForVoice(m.context) || !Prefs.keyboardOnCar(m.context) || Prefs.keepPhoneOn(m.context)) {
+                    m.setTempKeyboardWake(false);
+                }
+                m.applyContent();
+            });
             m.main.post(m.listener::onMirrorChanged); // Android Auto's buttons (Pointer)
         } else {
             Mirror p = previewShowing;
@@ -727,6 +759,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         io.post(() -> {
             // like a finger on the app: wakes the phone again if the user had put it to sleep
             if (car && pushedKeep) call(s -> s.keepRunning(true));
+            setTempKeyboardWake(false);
             call(s -> s.key(KeyEvent.KEYCODE_BACK));
         });
     }
@@ -737,6 +770,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         if (carShowing == this) setCarShowing(null);
         if (previewShowing == this) previewShowing = null;
         io.post(() -> {
+            setTempKeyboardWake(false);
             touch.cancel();
             IDisplayService s = pushedTo;
             if (s != null) {
@@ -758,6 +792,8 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
     public void releaseQuietly() {
         Shell.removeListener(this);
         if (previewShowing == this) previewShowing = null;
+        io.removeCallbacks(clearTempWake);
+        tempWakeActive = false;
         compositor.release();
         thread.quitSafely();
     }
@@ -935,6 +971,8 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             pushedTo = null;
             displayId = -1;
             pushedOrientation = null;
+            tempWakeActive = false;
+            io.removeCallbacks(clearTempWake);
             setProblem(shellProblem(Shell.state()));
             return;
         }
@@ -946,6 +984,8 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             pushedKeyboard = null;
             pushedPhoneOn = null;
             pushedOrientation = null;
+            tempWakeActive = false;
+            io.removeCallbacks(clearTempWake);
             displayId = -1;
             launched = null;
         }
@@ -998,6 +1038,7 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
             boolean keep = screen != null || hold;
             if (car && pushedKeep != keep) {
                 pushedKeep = keep;
+                if (!keep) setTempKeyboardWake(false);
                 s.keepRunning(keep);
                 if (keep) setCarShowing(this);
                 else if (carShowing == this) setCarShowing(null);
@@ -1065,6 +1106,8 @@ public final class Mirror implements Touch.Sink, Shell.Listener {
         pushedTo = null;
         displayId = -1;
         pushedOrientation = null;
+        tempWakeActive = false;
+        io.removeCallbacks(clearTempWake);
         Shell.lost(s);
         setProblem(shellProblem(Shell.state()));
     }

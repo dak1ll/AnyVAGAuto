@@ -22,6 +22,7 @@ import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -216,16 +217,7 @@ public final class MainActivity extends Activity implements Shell.Listener {
             return true;
         }
         if (item.getItemId() == MENU_KEYBOARD) {
-            String[] choices = {"On the car screen", "On the phone (its screen then stays on)"};
-            new AlertDialog.Builder(this)
-                    .setTitle("Where the keyboard opens")
-                    .setSingleChoiceItems(choices, Prefs.keyboardOnCar(this) ? 0 : 1, (d, which) -> {
-                        Prefs.setKeyboardOnCar(this, which == 0);
-                        Mirror.settingsChanged();
-                        d.dismiss();
-                    })
-                    .setNegativeButton("Close", null)
-                    .show();
+            showKeyboardDialog();
             return true;
         }
         if (item.getItemId() == MENU_NAV_SIDE) {
@@ -591,6 +583,58 @@ public final class MainActivity extends Activity implements Shell.Listener {
         if (!lock) parts.add("Follow app");
         if (inset > 0) parts.add(inset + " dp");
         return TextUtils.join(" · ", parts);
+    }
+
+    private void showKeyboardDialog() {
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(dp(20), dp(8), dp(20), dp(4));
+
+        boolean curOnCar = Prefs.keyboardOnCar(this);
+        RadioGroup placeGroup = addRadioSection(body, "Where the keyboard opens",
+                new String[]{"On the car screen", "On the phone (keeps phone screen on)"},
+                new int[]{1, 0}, curOnCar ? 1 : 0, false);
+
+        TextView voiceHeader = Ui.text(this, "Voice input", 14, true, Ui.accent(this));
+        voiceHeader.setPadding(0, dp(14), 0, dp(4));
+        body.addView(voiceHeader);
+
+        CheckBox wakeCheck = new CheckBox(this);
+        wakeCheck.setText("Wake phone screen briefly for voice input");
+        wakeCheck.setTextColor(Ui.text(this));
+        wakeCheck.setTextSize(15);
+        wakeCheck.setButtonTintList(ColorStateList.valueOf(Ui.accent(this)));
+        wakeCheck.setMinimumHeight(dp(40));
+        wakeCheck.setChecked(Prefs.wakeForVoice(this));
+        body.addView(wakeCheck);
+
+        TextView caption = Ui.text(this,
+                "Helps keyboard microphone dictation (e.g. Gboard, Yandex Keyboard) work when the phone screen is kept off in the car.",
+                13, false, Ui.text2(this));
+        caption.setPadding(dp(4), dp(2), 0, dp(4));
+        body.addView(caption);
+
+        Runnable updateWakeEnabled = () -> {
+            boolean onCar = selectedTag(placeGroup, curOnCar ? 1 : 0) == 1;
+            wakeCheck.setEnabled(onCar);
+            wakeCheck.setAlpha(onCar ? 1f : 0.5f);
+            caption.setAlpha(onCar ? 1f : 0.5f);
+        };
+        updateWakeEnabled.run();
+        placeGroup.setOnCheckedChangeListener((g, checkedId) -> updateWakeEnabled.run());
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(body);
+        new AlertDialog.Builder(this)
+                .setTitle("Keyboard")
+                .setView(scroll)
+                .setPositiveButton("Save", (d, w) -> {
+                    Prefs.setKeyboardOnCar(this, selectedTag(placeGroup, curOnCar ? 1 : 0) == 1);
+                    Prefs.setWakeForVoice(this, wakeCheck.isChecked());
+                    Mirror.settingsChanged();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void showAppProfileDialog(Apps.App a) {

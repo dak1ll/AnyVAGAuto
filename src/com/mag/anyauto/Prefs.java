@@ -27,6 +27,7 @@ public final class Prefs {
     private static final String CAR_KNOB = "car_knob";
     private static final String POINTER_TOLD = "pointer_told";
     private static final String POINTER_BUTTONS = "pointer_buttons";
+    private static final String WAKE_FOR_VOICE = "wake_for_voice";
     static final int MIN_APP_DPI = 100;
     static final int MAX_APP_DPI = 640;
     static final int MAX_INSET_DP = 64;
@@ -191,6 +192,15 @@ public final class Prefs {
 
     public static void setKeyboardOnCar(Context c, boolean onCar) {
         p(c).edit().putBoolean(KEYBOARD_ON_CAR, onCar).apply();
+    }
+
+    /** Briefly wake the phone's screen while the car keyboard is open for voice input (default on). */
+    public static boolean wakeForVoice(Context c) {
+        return p(c).getBoolean(WAKE_FOR_VOICE, true);
+    }
+
+    public static void setWakeForVoice(Context c, boolean on) {
+        p(c).edit().putBoolean(WAKE_FOR_VOICE, on).apply();
     }
 
     /** The app also uses the band Android Auto keeps for Apps and Back (default on). */

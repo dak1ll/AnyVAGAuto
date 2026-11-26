@@ -62,20 +62,77 @@ final class PhonePower {
     // counted as two of the flicker guard's darkenings; the dim one while the screen stays on
     private final PowerManager.WakeLock dimLock, brightLock;
     private PowerManager.WakeLock held;
-    private boolean wanted; // the car shows AnyAuto
+    private volatile boolean wanted; // the car shows AnyAuto
     private volatile boolean armed; // we hold the phone awake (and dark) right now
     private volatile boolean dark;  // false: the keyboard is on the phone, so its screen stays on
+    private volatile boolean tempWake; // true: temporarily lit (e.g. keyboard/voice dictation)
     private boolean wokeIt; // the phone was asleep when we armed
     private volatile boolean fights; // the phone would not stay dark: its screen stays on now
-    private final long[] blanks = new long[FIGHT_BLANKS]; // when we last darkened it (ring)
-    private int blankCount;
+    private final DarkPolicy policy;
     private long lastBlank;
     private long settleUntil; // darkenings before this are not counted (the phone is still waking)
     private Object idm;
     private Method requestDisplayPower;
 
+    /** Pure-Java flicker and blanking policy, testable off-device without Android stubs. */
+    static final class DarkPolicy {
+        private boolean userDark;
+        private boolean tempWake;
+        private boolean fights;
+        private final long[] blanks = new long[FIGHT_BLANKS];
+        private int blankCount;
+
+        DarkPolicy() {
+            this(false);
+        }
+
+        DarkPolicy(boolean userDark) {
+            this.userDark = userDark;
+        }
+
+        void setUserDark(boolean dark) {
+            this.userDark = dark;
+        }
+
+        void setTempWake(boolean temp) {
+            this.tempWake = temp;
+            this.blankCount = 0;
+        }
+
+        boolean isTempWake() {
+            return tempWake;
+        }
+
+        boolean shouldBlank() {
+            return userDark && !tempWake && !fights;
+        }
+
+        boolean fightsDetected() {
+            return fights;
+        }
+
+        void markFights() {
+            this.fights = true;
+        }
+
+        boolean recordBlank(long nowMs, boolean withinSettleWindow) {
+            if (!shouldBlank()) return false;
+            if (!withinSettleWindow) {
+                blanks[blankCount % FIGHT_BLANKS] = nowMs;
+                blankCount++;
+                // the oldest of the last FIGHT_BLANKS darkenings sits where the next one will go
+                if (blankCount >= FIGHT_BLANKS && nowMs - blanks[blankCount % FIGHT_BLANKS] < FIGHT_WINDOW_MS) {
+                    fights = true;
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
     PhonePower(Context shell, DisplayManager dm, boolean dark) {
         this.dark = dark;
+        this.policy = new DarkPolicy(dark);
         thread.start();
         h = new Handler(thread.getLooper());
         this.dm = dm;
@@ -99,7 +156,7 @@ final class PhonePower {
 
             @Override
             public void onDisplayChanged(int id) {
-                if (id == Display.DEFAULT_DISPLAY && armed) blank();
+                if (id == Display.DEFAULT_DISPLAY && armed && policy.shouldBlank()) blank();
             }
         }, h);
     }
@@ -125,6 +182,8 @@ final class PhonePower {
         h.post(() -> {
             h.removeCallbacks(releaseLater);
             wanted = false;
+            policy.setTempWake(false);
+            tempWake = false;
             disarm();
         });
     }
@@ -133,6 +192,8 @@ final class PhonePower {
 
     private void releaseLater() {
         wanted = false;
+        policy.setTempWake(false);
+        tempWake = false;
         disarm();
     }
 
@@ -146,13 +207,38 @@ final class PhonePower {
         h.post(() -> {
             if (dark == on) return;
             dark = on;
+            policy.setUserDark(on);
+            if (!armed) return;
+            holdLock();
+            if (policy.shouldBlank()) {
+                blank();
+            } else if (!on) {
+                setPhonePower(Display.STATE_UNKNOWN);
+                h.postDelayed(checkRestored, 500);
+            }
+        });
+    }
+
+    /**
+     * Temporarily keeps the phone's screen on (e.g. while the car keyboard is open for voice input)
+     * without changing the user's dark setting or counting stale blanks toward flicker lockout.
+     */
+    void setTempWake(boolean on) {
+        h.post(() -> {
+            if (on == policy.isTempWake()) return;
+            policy.setTempWake(on);
+            tempWake = on;
             if (!armed) return;
             holdLock();
             if (on) {
-                blank();
-            } else {
                 setPhonePower(Display.STATE_UNKNOWN);
-                h.postDelayed(checkRestored, 500);
+                Display d = dm.getDisplay(Display.DEFAULT_DISPLAY);
+                if (!pm.isInteractive() || (d != null && d.getState() == Display.STATE_OFF)) {
+                    wakeUp();
+                }
+            } else {
+                settleUntil = SystemClock.uptimeMillis() + WAKE_SETTLE_MS;
+                if (policy.shouldBlank()) blank();
             }
         });
     }
@@ -164,7 +250,9 @@ final class PhonePower {
 
     String describe() {
         return wanted ? (armed ? (fights ? "phone kept awake, screen on (it would not stay off)"
-                : dark ? "phone kept awake, screen off" : "phone kept awake, screen on")
+                : !dark ? "phone kept awake, screen on"
+                : tempWake ? "phone kept awake, screen on (temp)"
+                : "phone kept awake, screen off")
                 : "phone asleep, car screen paused") : "phone untouched";
     }
 
@@ -173,15 +261,22 @@ final class PhonePower {
     private void arm() {
         h.removeCallbacks(checkRestored);
         if (armed) {
-            blank();
+            if (policy.shouldBlank()) blank();
             return;
         }
         wokeIt = !pm.isInteractive();
         settleUntil = wokeIt ? SystemClock.uptimeMillis() + WAKE_SETTLE_MS : 0;
         holdLock();
         armed = true;
-        Log.i(TAG, "phone kept awake with its screen " + (dark ? "off" : "on") + (wokeIt ? " (woken for the car)" : ""));
-        blank();
+        Log.i(TAG, "phone kept awake with its screen " + (policy.shouldBlank() ? "off" : "on")
+                + (wokeIt ? " (woken for the car)" : ""));
+        if (policy.shouldBlank()) {
+            blank();
+        } else if (tempWake) {
+            setPhonePower(Display.STATE_UNKNOWN);
+            Display d = dm.getDisplay(Display.DEFAULT_DISPLAY);
+            if (!pm.isInteractive() || (d != null && d.getState() == Display.STATE_OFF)) wakeUp();
+        }
         h.removeCallbacks(watch);
         h.postDelayed(watch, WATCH_MS);
     }
@@ -191,7 +286,7 @@ final class PhonePower {
         public void run() {
             if (!armed) return;
             if (!pm.isInteractive()) {
-                if (dark && !fights && SystemClock.uptimeMillis() - lastBlank < SLEPT_AFTER_BLANK_MS) {
+                if (policy.shouldBlank() && SystemClock.uptimeMillis() - lastBlank < SLEPT_AFTER_BLANK_MS) {
                     // asleep right after we darkened it: the phone treats a dark screen as sleep
                     giveUpDark("it falls asleep when its screen is powered off");
                     h.postDelayed(this, WATCH_MS);
@@ -203,7 +298,7 @@ final class PhonePower {
                 releaseLock();
                 return;
             }
-            blank();
+            if (policy.shouldBlank()) blank();
             h.postDelayed(this, WATCH_MS);
         }
     };
@@ -224,7 +319,7 @@ final class PhonePower {
 
     /** The wake lock for now: bright while the screen is to be dark, dim while it stays on. */
     private void holdLock() {
-        PowerManager.WakeLock want = dark && !fights ? brightLock : dimLock;
+        PowerManager.WakeLock want = policy.shouldBlank() ? brightLock : dimLock;
         if (held == want) return;
         want.acquire();
         if (held != null) held.release();
@@ -263,18 +358,13 @@ final class PhonePower {
     private void blank() {
         // asleep (the power button, or going to sleep right now): nothing to darken, and not a
         // darkening that the flicker guard should count
-        if (!dark || fights || !pm.isInteractive()) return;
+        if (!policy.shouldBlank() || !pm.isInteractive()) return;
         Display d = dm.getDisplay(Display.DEFAULT_DISPLAY);
         if (d != null && d.getState() == Display.STATE_OFF) return;
         long now = SystemClock.uptimeMillis();
-        if (now >= settleUntil) {
-            blanks[blankCount % FIGHT_BLANKS] = now;
-            blankCount++;
-            // the oldest of the last FIGHT_BLANKS darkenings sits where the next one will go
-            if (blankCount >= FIGHT_BLANKS && now - blanks[blankCount % FIGHT_BLANKS] < FIGHT_WINDOW_MS) {
-                giveUpDark("its screen keeps coming back on");
-                return;
-            }
+        if (!policy.recordBlank(now, now < settleUntil)) {
+            if (policy.fightsDetected()) giveUpDark("its screen keeps coming back on");
+            return;
         }
         lastBlank = now;
         setPhonePower(Display.STATE_OFF);
@@ -282,6 +372,7 @@ final class PhonePower {
 
     /** The flicker guard: stop powering the screen off; the phone stays awake with it on. */
     private void giveUpDark(String why) {
+        policy.markFights();
         fights = true;
         Log.w(TAG, "phone: " + why + ". It stays on from now on, so it does not flicker");
         if (armed) holdLock();
